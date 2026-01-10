@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Universal XLSX Row Matcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+        .info-box li {
+            margin: 5px 0;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .hint {
+            font-size: 13px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+        .btn-file {
+            background: #ed8936;
+            color: white;
+        }
+        .btn-file:hover {
+            background: #dd6b20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(237, 137, 54, 0.4);
+        }
+        #status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: 500;
+            display: none;
+        }
+        #status.processing {
+            display: block;
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fbbf24;
+        }
+        #status.success {
+            display: block;
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+        #status.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+        #results {
+            margin-top: 30px;
+        }
+        #resultsContent {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .example {
+            background: #fff9e6;
+            border: 1px solid #ffd966;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .example-title {
+            font-weight: 600;
+            color: #d97706;
+            margin-bottom: 8px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+    <link rel="icon" type="image/png" href="csvmatcherlogo.png">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>XLSX Row Matcher : Set-valued function mapper</h1>
+            <p>Find rows based on cell content and extract specific columns where row/column identifiers are merged into the table</p>
+        </div>
+        <img src="csvmatcherlogo.png" 
+             alt="XLSX Matcher Logo" 
+             style="position: absolute; 
+                    top: 5px; 
+                    left: 5px; 
+                    width: 240px; 
+                    height: auto;
+                    z-index: 1000;">
+        <div class="content">
+            <div class="info-box">
+                <h3>📋 How This Works</h3>
+                <ul>
+                    <li>Upload your XLSX file</li>
+                    <li>Specify which columns to search in (e.g., "R:BGB" or "A,C,D")</li>
+                    <li>Enter the text value to search for (e.g., "HAS", "Yes", "Active")</li>
+                    <li>Choose which columns you want to see in the output</li>
+                    <li><strong>NEW:</strong> Shows ALL matching headers for each row where value appears</li>
+                    <li><strong>NEW:</strong> Output format: [Row Identifier], [Header1], [Header2], ...</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <div class="section-title">1. Upload XLSX File</div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls">
+                <button class="btn-file" onclick="document.getElementById('fileInput').click()">
+                    📁 Choose XLSX File
+                </button>
+                <span id="fileName" style="margin-left: 15px; color: #666;"></span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">2. Configure Search</div>
+                
+                <label>Column Range to Search In:</label>
+                <input type="text" id="columnRange" placeholder="e.g., R:BGB or A,C,E,F or D:Z">
+                <div class="hint">Use ":" for ranges (A:Z) or commas for specific columns (A,B,C)</div>
+                
+                <div class="example">
+                    <div class="example-title">Examples:</div>
+                    <div>• <code>R:BGB</code> - Search in columns R through BGB</div>
+                    <div>• <code>A,C,D</code> - Search only in columns A, C, and D</div>
+                    <div>• <code>B:F</code> - Search in columns B through F</div>
+                </div>
+
+                <label style="margin-top: 20px;">Search For This Value:</label>
+                <input type="text" id="searchValue" placeholder="e.g., HAS, Yes, Active, TRUE">
+                <div class="hint">Case-insensitive search</div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">3. Choose Output Columns</div>
+                
+                <label>Columns to Display in Results:</label>
+                <input type="text" id="outputColumns" placeholder="e.g., A or A,B,C">
+                <div class="hint">First column will be used as the row identifier. Example: "A" uses Column A values as identifiers</div>
+                
+                <div class="example">
+                    <div class="example-title">Example Output Format:</div>
+                    <div><strong>Input:</strong> Burger, 1, 0, 1, 1</div>
+                    <div><strong>Searching for "1" in columns B:E</strong></div>
+                    <div><strong>Output:</strong> Burger, HasGluten, HasDairy, HasEggs</div>
+                    <div style="margin-top: 5px; color: #666;">(Shows row identifier + all header names where value was found)</div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="processXLSX()">🚀 Process XLSX</button>
+            </div>
+
+            <div id="status"></div>
+
+            <div id="downloadSection" style="display:none; margin-top: 30px;">
+                <div class="section" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3); border: 3px solid #2f855a;">
+                    <div class="section-title" style="color: white; font-size: 24px; text-align: center; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">
+                       ⬇️ 4. DOWNLOAD YOUR RESULTS ⬇️
+                    </div>
+                    <label style="color: white; font-size: 18px; font-weight: 700; text-align: center; display: block; margin-bottom: 12px;">
+                        📁 Choose Your Download Format:
+                    </label>
+                    <select id="formatSelect" style="font-size: 16px; font-weight: 600; padding: 15px 40px 15px 15px; border: 5px solid #ffd700; background: white; color: #2f855a; cursor: pointer; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.5); width: 85%; margin: 0 auto; display: block; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27https://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%232f855a%27 stroke-width=%273%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 10px center; background-size: 24px;">
+                        <option value="txt">📄 TXT - Plain Text</option>
+                        <option value="csv">📊 CSV - Comma Separated Values</option>
+                        <option value="json">🔧 JSON - JavaScript Object Notation</option>
+                        <option value="xlsx">📈 XLSX - Excel Spreadsheet</option>
+                        <option value="pdf">📕 PDF - Portable Document Format</option>
+                    </select>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="btn-secondary" onclick="downloadResults()" style="font-size: 18px; padding: 15px 40px; background: white; color: #38a169; border: 3px solid white; box-shadow: 0 6px 16px rgba(0,0,0,0.3); font-weight: 700;">
+                            💾 DOWNLOAD NOW
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results" style="display:none;">
+                <div class="section-title">📊 Results Preview</div>
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        let resultsData = '';
+        let matchedRows = [];
+        let currentFile = null;
+        let headers = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            currentFile = e.target.files[0];
+            if (currentFile) {
+                document.getElementById('fileName').textContent = '✓ ' + currentFile.name;
+            }
+        });
+
+        function columnToIndex(col) {
+            col = col.toUpperCase();
+            let index = 0;
+            for (let i = 0; i < col.length; i++) {
+                index = index * 26 + (col.charCodeAt(i) - 64);
+            }
+            return index - 1;
+        }
+
+        function parseColumnRange(rangeStr) {
+            rangeStr = rangeStr.trim().toUpperCase();
+            let columns = [];
+            
+            if (rangeStr.includes(':')) {
+                let [start, end] = rangeStr.split(':');
+                let startIdx = columnToIndex(start);
+                let endIdx = columnToIndex(end);
+                for (let i = startIdx; i <= endIdx; i++) {
+                    columns.push(i);
+                }
+            } else if (rangeStr.includes(',')) {
+                let cols = rangeStr.split(',');
+                cols.forEach(col => {
+                    columns.push(columnToIndex(col.trim()));
+                });
+            } else {
+                columns.push(columnToIndex(rangeStr));
+            }
+            
+            return columns;
+        }
+
+        function setStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = type;
+        }
+
+        function processXLSX() {
+            if (!currentFile) {
+                setStatus('❌ Please select an XLSX file first!', 'error');
+                return;
+            }
+
+            const columnRange = document.getElementById('columnRange').value;
+            const searchValue = document.getElementById('searchValue').value;
+            const outputColumns = document.getElementById('outputColumns').value;
+
+            if (!columnRange || !searchValue || !outputColumns) {
+                setStatus('❌ Please fill in all fields!', 'error');
+                return;
+            }
+
+            setStatus('⏳ Processing your XLSX file...', 'processing');
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('downloadSection').style.display = 'none';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Get first worksheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convert to JSON
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (rows.length === 0) {
+                        setStatus('❌ The XLSX file appears to be empty!', 'error');
+                        return;
+                    }
+                    
+                    headers = rows[0];
+                    
+                    const searchColumns = parseColumnRange(columnRange);
+                    const displayColumns = parseColumnRange(outputColumns);
+                    const searchTerm = searchValue.trim().toUpperCase();
+                    
+                    // Create formatted output
+                    let output = '╔══════════════════════════════════════════════════════════════╗\n';
+                    output += '║                     XLSX ANALYSIS RESULTS                     ║\n';
+                    output += '╠══════════════════════════════════════════════════════════════╣\n';
+                    output += `║ File: ${currentFile.name.padEnd(55)} ║\n`;
+                    output += `║ Total Rows: ${(rows.length - 1).toString().padEnd(50)} ║\n`;
+                    output += `║ Search Columns: ${columnRange.padEnd(47)} ║\n`;
+                    output += `║ Search Value: "${searchValue}"${' '.repeat(57 - searchValue.length - 2)}║\n`;
+                    output += '╠══════════════════════════════════════════════════════════════╣\n';
+                    output += '║                        MATCHING ROWS                         ║\n';
+                    output += '╠══════════════════════════════════════════════════════════════╣\n';
+                    
+                    let matchCount = 0;
+                    matchedRows = [];
+                    
+                    // Process each data row
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        let matchedHeaders = [];
+                        
+                        // Check ALL search columns for matches
+                        for (let colIdx of searchColumns) {
+                            if (colIdx < row.length) {
+                                const cell = row[colIdx];
+                                // Check if cell exists and matches search term
+                                if (cell !== undefined && cell !== null && cell.toString().trim().toUpperCase() === searchTerm) {
+                                    // Get the header from row 1 for this column
+                                    if (colIdx < headers.length) {
+                                        matchedHeaders.push(headers[colIdx] || `Column ${colIdx + 1}`);
+                                    } else {
+                                        matchedHeaders.push(`Column ${colIdx + 1}`);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // If we found ANY matches in this row
+                        if (matchedHeaders.length > 0) {
+                            matchCount++;
+                            
+                            // Get the row identifier from first display column
+                            let rowIdentifier = '';
+                            if (displayColumns.length > 0 && displayColumns[0] < row.length) {
+                                rowIdentifier = row[displayColumns[0]] !== undefined ? row[displayColumns[0]].toString() : '(empty)';
+                            } else if (displayColumns.length > 0) {
+                                rowIdentifier = `Row ${i + 1}`;
+                            }
+                            
+                            // Build the output line
+                            output += `║ ${rowIdentifier}`;
+                            
+                            // Add matched headers
+                            if (matchedHeaders.length > 0) {
+                                const headerStr = matchedHeaders.join(', ');
+                                output += `\n║   → ${headerStr}`;
+                            }
+                            
+                            output += '\n║\n';
+                            
+                            // Store structured data for export
+                            let rowData = {
+                                rowNumber: i + 1,
+                                identifier: rowIdentifier,
+                                matchedHeaders: matchedHeaders,
+                                // Store all display column values
+                                displayData: {}
+                            };
+                            
+                            // Store all display column values
+                            for (let colIdx of displayColumns) {
+                                if (colIdx < row.length && colIdx < headers.length) {
+                                    const columnName = headers[colIdx] || `Column ${colIdx + 1}`;
+                                    const cellValue = row[colIdx] !== undefined ? row[colIdx].toString() : '(empty)';
+                                    rowData.displayData[columnName] = cellValue;
+                                }
+                            }
+                            
+                            matchedRows.push(rowData);
+                        }
+                    }
+                    
+                    // Add footer with summary
+                    output += '╠══════════════════════════════════════════════════════════════╣\n';
+                    output += '║                          SUMMARY                            ║\n';
+                    output += '╠══════════════════════════════════════════════════════════════╣\n';
+                    output += `║ Total Matching Rows: ${matchCount.toString().padEnd(42)} ║\n`;
+                    output += `║ Format: [Row Identifier], [Matched Header1], [Header2], ... ║\n`;
+                    output += '╚══════════════════════════════════════════════════════════════╝\n';
+                    
+                    resultsData = output;
+                    document.getElementById('resultsContent').textContent = output;
+                    document.getElementById('results').style.display = 'block';
+                    
+                    // Show download section
+                    const downloadSection = document.getElementById('downloadSection');
+                    if (downloadSection) {
+                        downloadSection.style.display = 'block';
+                    }
+                    
+                    setStatus(`✅ Success! Found ${matchCount} matching rows with ${matchedRows.reduce((total, row) => total + row.matchedHeaders.length, 0)} total matches.`, 'success');
+                    
+                } catch (error) {
+                    setStatus(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+            
+            reader.onerror = function(error) {
+                setStatus(`❌ Failed to read XLSX file: ${error.message}`, 'error');
+            };
+            
+            reader.readAsArrayBuffer(currentFile);
+        }
+
+        function downloadResults() {
+            const format = document.getElementById('formatSelect').value;
+            
+            switch(format) {
+                case 'txt':
+                    downloadTXT();
+                    break;
+                case 'csv':
+                    downloadCSV();
+                    break;
+                case 'json':
+                    downloadJSON();
+                    break;
+                case 'xlsx':
+                    downloadXLSX();
+                    break;
+                case 'pdf':
+                    downloadPDF();
+                    break;
+            }
+        }
+
+        function downloadTXT() {
+            const blob = new Blob([resultsData], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'xlsx_match_results.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadCSV() {
+            if (matchedRows.length === 0) {
+                alert('No data to download');
+                return;
+            }
+            
+            // Create CSV with row identifier and matched headers
+            let csvContent = 'Row Identifier,Matched Headers\n';
+            
+            matchedRows.forEach(row => {
+                let escapedIdentifier = row.identifier.toString().includes(',') ? 
+                    `"${row.identifier.replace(/"/g, '""')}"` : row.identifier;
+                
+                let escapedHeaders = row.matchedHeaders.length > 0 ?
+                    `"${row.matchedHeaders.join(', ').replace(/"/g, '""')}"` : '';
+                
+                csvContent += `${escapedIdentifier},${escapedHeaders}\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'xlsx_match_results.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadJSON() {
+            const jsonData = {
+                metadata: {
+                    file: currentFile.name,
+                    searchValue: document.getElementById('searchValue').value,
+                    searchColumns: document.getElementById('columnRange').value,
+                    outputColumns: document.getElementById('outputColumns').value,
+                    totalMatchingRows: matchedRows.length,
+                    totalMatches: matchedRows.reduce((total, row) => total + row.matchedHeaders.length, 0)
+                },
+                results: matchedRows
+            };
+            
+            const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'xlsx_match_results.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadXLSX() {
+            if (matchedRows.length === 0) {
+                alert('No data to download');
+                return;
+            }
+            
+            // Create worksheet data
+            const wsData = [
+                ['Row Identifier', 'Matched Headers']
+            ];
+            
+            matchedRows.forEach(row => {
+                wsData.push([
+                    row.identifier,
+                    row.matchedHeaders.join(', ')
+                ]);
+            });
+            
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, 'Match Results');
+            
+            XLSX.writeFile(wb, 'xlsx_match_results.xlsx');
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 15;
+            let y = 20;
+            
+            // Header
+            doc.setFontSize(18);
+            doc.text('XLSX Match Results', margin, y);
+            y += 10;
+            
+            doc.setFontSize(10);
+            doc.text(`File: ${currentFile.name}`, margin, y);
+            y += 7;
+            doc.text(`Search Value: ${document.getElementById('searchValue').value}`, margin, y);
+            y += 7;
+            doc.text(`Total Rows with Matches: ${matchedRows.length}`, margin, y);
+            y += 15;
+            
+            // Results
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('Results:', margin, y);
+            y += 10;
+            
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            
+            matchedRows.forEach((row, index) => {
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                    doc.setFontSize(9);
+                }
+                
+                // Row identifier
+                doc.setFont(undefined, 'bold');
+                doc.text(`${row.identifier}:`, margin, y);
+                y += 5;
+                
+                // Matched headers
+                doc.setFont(undefined, 'normal');
+                if (row.matchedHeaders.length > 0) {
+                    const headerText = row.matchedHeaders.join(', ');
+                    const lines = doc.splitTextToSize(headerText, pageWidth - 2 * margin);
+                    lines.forEach(line => {
+                        if (y > 270) {
+                            doc.addPage();
+                            y = 20;
+                            doc.setFontSize(9);
+                        }
+                        doc.text(`  ${line}`, margin + 5, y);
+                        y += 5;
+                    });
+                }
+                y += 8;
+            });
+            
+            doc.save('xlsx_match_results.pdf');
+        }
+    </script>
+    <footer>
+        <center><p>This tool addresses a fundamental but overlooked data problem: spreadsheets forced to act as entire relational databases within a single table. When complex information gets flattened into a grid, the meaning of the data—what the rows and columns represent—gets embedded within the data itself, typically with column headers in Row 1.
+
+This application helps you navigate that structure. It locates all cells matching your search term and intelligently retrieves the proper identifiers: the value from your specified row (like an item name) and the corresponding column header (like a property or category) for every match. It outputs these paired results in your choice of cleanly formatted PDF, CSV, JSON, XLSX, or TXT files.
+
+The entire process is secure and private. All parsing, searching, and file generation happens client-side in your browser. No data is ever sent to a server—it never leaves your machine. You get the power of a data processing utility with the absolute privacy of a local application. The code is open for inspection, confirming that no data or metadata is ever collected or transmitted. -Dimitry III</p></center>
+    </footer>
+</body>
+</html>
