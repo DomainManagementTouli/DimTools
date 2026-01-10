@@ -7,6 +7,17 @@
     <style>
         @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
         
+        /* Prevent links from turning blue */
+        a {
+            color: inherit !important;
+            text-decoration: none !important;
+        }
+        
+        a:visited, a:hover, a:active {
+            color: inherit !important;
+            text-decoration: none !important;
+        }
+        
         li:has(~ .current)::after {
             content: "/";
             margin-inline-start: 10px;
@@ -40,7 +51,7 @@
     <ul class="paper border shadow large-shadow shadow-hover">
         <li><a href="csvmatcher.html">CSV with Row 1 Titles</a></li>
         <li><a href="tomorrowunfed.html">Tomorrow's Unfed Count for B & L</a></li>
-        <li><a href="#">Spreadsheet Converter ⇄</a></li>
+        <li><a href="xlsxviewer.html">Secure XLSX Viewer</a></li>
         <li class="current"><a href="about.html">What is DimTools?</a></li>
     </ul>
 </body>
