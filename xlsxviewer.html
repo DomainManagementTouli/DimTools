@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DimTools - XLSX Viewer</title>
+    <!-- Load SheetJS library upfront -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
         
@@ -121,7 +123,8 @@
         #spreadsheet {
             width: 100%;
             border-collapse: collapse;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
         }
         
         #spreadsheet th, #spreadsheet td {
@@ -149,6 +152,36 @@
         
         #spreadsheet tr:hover {
             background-color: #f0e6d6;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            flex-direction: column;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #8b4513;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         /* Footer */
@@ -182,24 +215,38 @@
             margin-bottom: 0.5rem;
         }
         
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .container {
-                height: auto;
-                min-height: calc(100vh - 120px);
-            }
-            
-            .toolbar {
-                flex-direction: column;
-                gap: 0.5rem;
-                align-items: flex-start;
-            }
-            
-            #spreadsheet th, #spreadsheet td {
-                padding: 6px 8px;
-                font-size: 0.9rem;
-            }
-        }
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        height: auto;
+        min-height: calc(100vh - 120px);
+    }
+    
+    .toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+    
+    #spreadsheet th, #spreadsheet td {
+        padding: 6px 8px;
+        font-size: 0.9rem;
+    }
+    
+    /* Add these lines to make table fit the screen */
+    #spreadsheet {
+        width: 100% !important;
+        max-width: 100vw !important;
+        display: block;
+        overflow-x: auto;
+    }
+    
+    /* Optional: fix container if table is inside it */
+    .container {
+        width: 100%;
+        overflow-x: auto;
+    }
+}
     </style>
 </head>
 <body>
@@ -220,7 +267,10 @@
         <div id="spreadsheetContainer" class="spreadsheet-container">
             <div class="toolbar">
                 <h3 id="fileName">No file loaded</h3>
-                <button id="closeBtn">Close Spreadsheet</button>
+                <div>
+                    <button id="closeBtn">Close Spreadsheet</button>
+                    <button id="downloadBtn" style="margin-left: 10px;">Download as CSV</button>
+                </div>
             </div>
             <div id="spreadsheetWrapper" style="overflow: auto; max-height: calc(100vh - 200px);">
                 <table id="spreadsheet">
@@ -253,6 +303,37 @@
         const spreadsheet = document.getElementById('spreadsheet');
         const fileName = document.getElementById('fileName');
         const closeBtn = document.getElementById('closeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        // Check if SheetJS is loaded
+        function isSheetJSLoaded() {
+            return typeof XLSX !== 'undefined';
+        }
+        
+        // Show loading overlay
+        function showLoading() {
+            let overlay = document.getElementById('loadingOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'loadingOverlay';
+                overlay.className = 'loading-overlay';
+                overlay.innerHTML = `
+                    <div class="spinner"></div>
+                    <h3>Loading spreadsheet...</h3>
+                    <p>Please wait while we process your file</p>
+                `;
+                spreadsheetContainer.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+        }
+        
+        // Hide loading overlay
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
         
         // Event Listeners
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -290,11 +371,21 @@
             fileInput.value = '';
         });
         
+        downloadBtn.addEventListener('click', () => {
+            downloadAsCSV();
+        });
+        
         // Handle the uploaded file
         function handleFile(file) {
             // Check if it's an Excel file
             if (!file.name.match(/\.(xlsx|xls)$/i)) {
                 alert('Please upload an Excel file (.xlsx or .xls)');
+                return;
+            }
+            
+            // Check if SheetJS is available
+            if (!isSheetJSLoaded()) {
+                alert('Error: Spreadsheet library failed to load. Please refresh the page and try again.');
                 return;
             }
             
@@ -313,25 +404,15 @@
                 </tr>
             `;
             
+            // Show loading overlay
+            showLoading();
+            
             // Parse the Excel file
             parseExcelFile(file);
         }
         
-        // Parse Excel file using SheetJS library (will be loaded from CDN)
+        // Parse Excel file using SheetJS library
         function parseExcelFile(file) {
-            // Check if SheetJS is available
-            if (typeof XLSX === 'undefined') {
-                // Load SheetJS from CDN
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-                script.onload = () => processFileWithSheetJS(file);
-                document.head.appendChild(script);
-            } else {
-                processFileWithSheetJS(file);
-            }
-        }
-        
-        function processFileWithSheetJS(file) {
             const reader = new FileReader();
             
             reader.onload = function(e) {
@@ -343,40 +424,74 @@
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
-                    // Convert to HTML table
-                    const html = XLSX.utils.sheet_to_html(worksheet, {
-                        editable: false,
-                        header: '',
-                        footer: ''
+                    // Convert sheet data to array of arrays
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                    
+                    // Clear the spreadsheet
+                    spreadsheet.innerHTML = '';
+                    
+                    // Check if we have data
+                    if (jsonData.length === 0) {
+                        spreadsheet.innerHTML = `
+                            <tr>
+                                <td colspan="10" style="text-align: center; padding: 2rem;">
+                                    <h3>Empty Spreadsheet</h3>
+                                    <p>The selected spreadsheet appears to be empty.</p>
+                                </td>
+                            </tr>
+                        `;
+                        hideLoading();
+                        return;
+                    }
+                    
+                    // Determine max columns for proper colspan
+                    let maxCols = 0;
+                    jsonData.forEach(row => {
+                        if (row.length > maxCols) maxCols = row.length;
                     });
                     
-                    // Parse the HTML string to a DOM element
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
+                    // Create table headers from first row
+                    const headerRow = document.createElement('tr');
+                    const firstRow = jsonData[0] || [];
                     
-                    // Get the table from the parsed HTML
-                    const table = tempDiv.querySelector('table');
+                    // If first row seems to contain data (not empty), use it as header
+                    const hasHeaderData = firstRow.some(cell => cell !== undefined && cell !== null && cell.toString().trim() !== '');
                     
-                    if (table) {
-                        // Clear and replace the spreadsheet
-                        spreadsheet.innerHTML = '';
+                    if (hasHeaderData && firstRow.length > 0) {
+                        firstRow.forEach(cell => {
+                            const th = document.createElement('th');
+                            th.textContent = cell !== undefined && cell !== null ? cell.toString() : '';
+                            headerRow.appendChild(th);
+                        });
+                        spreadsheet.appendChild(headerRow);
                         
-                        // Copy all rows from the parsed table
-                        while (table.rows.length > 0) {
-                            spreadsheet.appendChild(table.rows[0]);
+                        // Create data rows starting from second row
+                        for (let i = 1; i < jsonData.length; i++) {
+                            createTableRow(jsonData[i], maxCols);
                         }
-                        
-                        // Add sticky header functionality
-                        makeHeadersSticky();
-                        
-                        // Scroll to top
-                        document.getElementById('spreadsheetWrapper').scrollTop = 0;
-                        
-                        // Add some visual enhancements
-                        enhanceTable();
                     } else {
-                        throw new Error('Could not parse spreadsheet data');
+                        // Create generic headers (A, B, C, ...)
+                        for (let i = 0; i < maxCols; i++) {
+                            const th = document.createElement('th');
+                            th.textContent = String.fromCharCode(65 + (i % 26));
+                            if (i >= 26) th.textContent += String.fromCharCode(65 + (i % 26));
+                            headerRow.appendChild(th);
+                        }
+                        spreadsheet.appendChild(headerRow);
+                        
+                        // Create data rows starting from first row
+                        jsonData.forEach(row => {
+                            createTableRow(row, maxCols);
+                        });
                     }
+                    
+                    // Add visual enhancements
+                    enhanceTable();
+                    
+                    // Hide loading overlay
+                    setTimeout(() => {
+                        hideLoading();
+                    }, 500);
                     
                 } catch (error) {
                     console.error('Error parsing Excel file:', error);
@@ -384,11 +499,12 @@
                         <tr>
                             <td colspan="10" style="text-align: center; padding: 2rem; color: #8b4513;">
                                 <h3>Error loading spreadsheet</h3>
-                                <p>${error.message}</p>
+                                <p>${error.message || 'Unknown error'}</p>
                                 <p>Please make sure you're uploading a valid Excel file.</p>
                             </td>
                         </tr>
                     `;
+                    hideLoading();
                 }
             };
             
@@ -401,21 +517,67 @@
                         </td>
                     </tr>
                 `;
+                hideLoading();
             };
             
             // Read the file as an array buffer
             reader.readAsArrayBuffer(file);
         }
         
-        // Make table headers sticky
-        function makeHeadersSticky() {
-            const headers = spreadsheet.querySelectorAll('th');
-            headers.forEach(header => {
-                header.style.position = 'sticky';
-                header.style.top = '0';
-                header.style.zIndex = '10';
-                header.style.backgroundColor = '#f5e9d9';
-            });
+        // Helper function to create a table row
+        function createTableRow(rowData, maxCols) {
+            const tr = document.createElement('tr');
+            
+            for (let i = 0; i < maxCols; i++) {
+                const td = document.createElement('td');
+                const cellValue = rowData && i < rowData.length ? rowData[i] : '';
+                td.textContent = cellValue !== undefined && cellValue !== null ? cellValue.toString() : '';
+                tr.appendChild(td);
+            }
+            
+            spreadsheet.appendChild(tr);
+        }
+        
+        // Download table as CSV
+        function downloadAsCSV() {
+            if (!spreadsheet.rows.length || spreadsheet.rows.length <= 1) {
+                alert('No data to download');
+                return;
+            }
+            
+            let csvContent = '';
+            
+            // Get all rows
+            const rows = spreadsheet.rows;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const cells = row.cells;
+                const rowData = [];
+                
+                for (let j = 0; j < cells.length; j++) {
+                    let cellValue = cells[j].textContent;
+                    // Escape quotes and wrap in quotes if contains comma or quote
+                    if (cellValue.includes(',') || cellValue.includes('"') || cellValue.includes('\n')) {
+                        cellValue = '"' + cellValue.replace(/"/g, '""') + '"';
+                    }
+                    rowData.push(cellValue);
+                }
+                
+                csvContent += rowData.join(',') + '\n';
+            }
+            
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'spreadsheet_export.csv';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
         
         // Enhance table with better styling
@@ -439,26 +601,43 @@
                         row.style.backgroundColor = index % 2 === 0 ? '#f9f5eb' : 'white';
                     });
                 }
-            });
-            
-            // Make cells truncate text with ellipsis
-            const cells = spreadsheet.querySelectorAll('td');
-            cells.forEach(cell => {
-                cell.style.overflow = 'hidden';
-                cell.style.textOverflow = 'ellipsis';
-                cell.style.whiteSpace = 'nowrap';
-                cell.style.maxWidth = '300px';
                 
-                // Add title attribute for full text on hover
-                if (cell.scrollWidth > cell.clientWidth) {
-                    cell.title = cell.textContent;
-                }
+                // Make cells truncate text with ellipsis
+                const cells = row.querySelectorAll('th, td');
+                cells.forEach(cell => {
+                    cell.style.overflow = 'hidden';
+                    cell.style.textOverflow = 'ellipsis';
+                    cell.style.whiteSpace = 'nowrap';
+                    cell.style.maxWidth = '300px';
+                    
+                    // Add title attribute for full text on hover
+                    if (cell.scrollWidth > cell.clientWidth) {
+                        cell.title = cell.textContent;
+                    }
+                });
             });
         }
         
-        // Initialize with a sample message
+        // Initialize on page load
         window.addEventListener('DOMContentLoaded', () => {
-            // Nothing to initialize here
+            console.log('SheetJS loaded:', isSheetJSLoaded());
+            
+            // Show a test message if SheetJS loaded successfully
+            if (isSheetJSLoaded()) {
+                console.log('Ready to process Excel files!');
+            } else {
+                console.error('SheetJS library failed to load');
+                // Add error message to instructions
+                const instructions = document.querySelector('.instructions');
+                const errorMsg = document.createElement('div');
+                errorMsg.style.color = '#8b4513';
+                errorMsg.style.marginTop = '1rem';
+                errorMsg.style.padding = '1rem';
+                errorMsg.style.backgroundColor = '#f9f5eb';
+                errorMsg.style.borderRadius = '5px';
+                errorMsg.innerHTML = '<strong>Warning:</strong> Spreadsheet library failed to load. Please refresh the page.';
+                instructions.appendChild(errorMsg);
+            }
         });
     </script>
 </body>
