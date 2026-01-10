@@ -79,14 +79,15 @@
             flex-grow: 1;
             background: white;
             border-radius: 5px;
-            overflow: auto;
+            overflow: hidden;
             display: none;
             position: relative;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            flex-direction: column;
         }
         
         .spreadsheet-container.active {
-            display: block;
+            display: flex;
         }
         
         /* Toolbar */
@@ -98,6 +99,7 @@
             background: #8b4513;
             color: white;
             border-radius: 5px 5px 0 0;
+            flex-shrink: 0;
         }
         
         .toolbar h3 {
@@ -119,12 +121,20 @@
             background: #a0522d;
         }
         
+        /* Spreadsheet wrapper */
+        .spreadsheet-wrapper {
+            overflow: auto;
+            flex-grow: 1;
+            max-height: calc(100vh - 200px);
+        }
+        
         /* Spreadsheet table */
         #spreadsheet {
             width: 100%;
             border-collapse: collapse;
             font-family: 'Courier New', monospace;
             font-size: 14px;
+            table-layout: auto;
         }
         
         #spreadsheet th, #spreadsheet td {
@@ -215,38 +225,34 @@
             margin-bottom: 0.5rem;
         }
         
-/* Responsive adjustments */
-@media (max-width: 100%) {
-    .container {
-        height: auto;
-        min-height: calc(100vh - 120px);
-    }
-    
-    .toolbar {
-        flex-direction: column;
-        gap: 0.5rem;
-        align-items: flex-start;
-    }
-    
-    #spreadsheet th, #spreadsheet td {
-        padding: 6px 8px;
-        font-size: 0.9rem;
-    }
-    
-    /* Add these lines to make table fit the screen */
-    #spreadsheet {
-        width: 100% !important;
-        max-width: 100vw !important;
-        display: block;
-        overflow-x: auto;
-    }
-    
-    /* Optional: fix container if table is inside it */
-    .container {
-        width: 100%;
-        overflow-x: auto;
-    }
-}
+        /* Responsive adjustments - FIXED */
+        @media (max-width: 768px) {
+            .container {
+                height: auto;
+                min-height: calc(100vh - 120px);
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: stretch;
+            }
+            
+            .toolbar div {
+                display: flex;
+                gap: 0.5rem;
+            }
+            
+            .toolbar button {
+                flex: 1;
+            }
+            
+            #spreadsheet th, #spreadsheet td {
+                padding: 6px 8px;
+                font-size: 0.9rem;
+                min-width: 80px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -269,10 +275,10 @@
                 <h3 id="fileName">No file loaded</h3>
                 <div>
                     <button id="closeBtn">Close Spreadsheet</button>
-                    <button id="downloadBtn" style="margin-left: 10px;">Download as CSV</button>
+                    <button id="downloadBtn">Download as CSV</button>
                 </div>
             </div>
-            <div id="spreadsheetWrapper" style="overflow: auto; max-height: calc(100vh - 200px);">
+            <div class="spreadsheet-wrapper">
                 <table id="spreadsheet">
                     <!-- Spreadsheet will be generated here -->
                 </table>
