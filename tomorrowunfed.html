@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unfed Count Tracker</title>
+    <style>
+        @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
+        
+        /* Same background styling as the provided example */
+        body {
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+            background-color: #f6eee3;
+            background-size: 20px 20px;
+            background-image: repeating-linear-gradient(0deg, #e5decf, #e5decf 1px, #f6eee3 1px, #f6eee3);
+            padding: 2rem 1rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Container styling */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 2rem;
+            background: #fefcf6;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* Header styling */
+        .page-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 2px solid #e5decf;
+            padding-bottom: 1.5rem;
+        }
+        
+        .page-header h1 {
+            color: #5a4c3e;
+            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+        }
+        
+        .page-header p {
+            color: #7a6e5f;
+            font-size: 1.1rem;
+        }
+        
+        /* Table styling */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2.5rem;
+            background-color: #fefcf6;
+        }
+        
+        .data-table th {
+            background-color: #e8e1d1;
+            color: #5a4c3e;
+            font-weight: 600;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid #d5cdbc;
+            position: sticky;
+            top: 0;
+        }
+        
+        .data-table td {
+            padding: 0.75rem;
+            text-align: center;
+            border: 1px solid #e5decf;
+            vertical-align: middle;
+        }
+        
+        .unit-name {
+            font-weight: 600;
+            color: #5a4c3e;
+            background-color: #f1ebdd;
+            text-align: left;
+            padding-left: 1.5rem;
+        }
+        
+        /* Counter cell styling */
+        .counter-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .counter-input {
+            width: 70px;
+            height: 40px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 500;
+            border: 2px solid #c9bfaa;
+            border-radius: 5px;
+            background-color: #fefcf6;
+            color: #5a4c3e;
+            transition: all 0.2s;
+        }
+        
+        .counter-input:focus {
+            outline: none;
+            border-color: #a8997a;
+            box-shadow: 0 0 0 3px rgba(168, 153, 122, 0.2);
+        }
+        
+        .counter-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #c9bfaa;
+            background-color: #f6eee3;
+            color: #5a4c3e;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .counter-btn:hover {
+            background-color: #e8e1d1;
+            transform: scale(1.05);
+        }
+        
+        .counter-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Button container */
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            border: 2px solid #c9bfaa;
+            background-color: #f6eee3;
+            color: #5a4c3e;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 180px;
+        }
+        
+        .action-btn:hover {
+            background-color: #e8e1d1;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .action-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .print-btn {
+            background-color: #5a4c3e;
+            color: #fefcf6;
+            border-color: #5a4c3e;
+        }
+        
+        .print-btn:hover {
+            background-color: #4a3f32;
+        }
+        
+        /* Footer styling */
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5decf;
+            color: #7a6e5f;
+            font-size: 0.9rem;
+        }
+        
+        /* Print-specific styles - UPDATED FOR SINGLE PAGE */
+        @media print {
+            @page {
+                size: letter;
+                margin: 0.5in;
+            }
+            
+            body, html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                width: 100%;
+            }
+            
+            body * {
+                visibility: hidden;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .print-section, .print-section * {
+                visibility: visible;
+            }
+            
+            .print-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                padding: 0;
+                margin: 0;
+                page-break-inside: avoid;
+                page-break-after: avoid;
+            }
+            
+            .print-header {
+                text-align: center;
+                font-size: 28px;
+                margin: 0 0 15px 0;
+                padding: 0;
+                color: #000;
+                font-weight: bold;
+                line-height: 1.2;
+            }
+            
+            .print-subtitle {
+                text-align: center;
+                font-size: 18px;
+                margin: 0 0 20px 0;
+                padding: 0;
+                color: #333;
+                font-weight: normal;
+            }
+            
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 14px;
+                margin: 0;
+                table-layout: fixed;
+            }
+            
+            .print-table th, .print-table td {
+                border: 2px solid #000;
+                padding: 8px;
+                text-align: center;
+                font-weight: bold;
+                height: 35px;
+                overflow: hidden;
+                word-wrap: break-word;
+            }
+            
+            .print-table th {
+                background-color: #f0f0f0;
+                font-size: 16px;
+                padding: 10px;
+            }
+            
+            .unit-cell {
+                text-align: left;
+                padding-left: 10px;
+                font-size: 13px;
+                width: 40%;
+            }
+            
+            .count-cell {
+                width: 30%;
+                font-size: 16px;
+            }
+            
+            .counter-btn, .action-btn, .footer, .page-header p,
+            .button-container, .container, .table-container {
+                display: none !important;
+            }
+            
+            /* Ensure table fits on one page */
+            .print-table {
+                page-break-inside: avoid;
+            }
+            
+            /* Adjust row heights to fit on one page */
+            .print-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            /* Force single page */
+            .print-section {
+                page-break-before: avoid;
+                page-break-after: avoid;
+                page-break-inside: avoid;
+            }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .data-table {
+                font-size: 0.9rem;
+            }
+            
+            .counter-input {
+                width: 60px;
+                height: 35px;
+            }
+            
+            .counter-btn {
+                width: 32px;
+                height: 32px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .page-header h1 {
+                font-size: 2rem;
+            }
+            
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .action-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .counter-cell {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .counter-input {
+                width: 50px;
+                height: 30px;
+                font-size: 1rem;
+            }
+            
+            .counter-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>UNFED COUNT: TOMORROW'S B & L</h1>
+            <p>Enter counts for each unit. Values are automatically saved as you enter them.</p>
+        </div>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Hospital Unit</th>
+                        <th>Breakfast</th>
+                        <th>Lunch</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <!-- Table rows will be generated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="button-container">
+            <button class="action-btn" id="clearBtn">Clear All Entries</button>
+            <button class="action-btn print-btn" id="printBtn">Print Report</button>
+        </div>
+        
+        <div class="footer">
+            <p>DimTools Unfed Count Tracker | Data is stored locally in your browser</p>
+        </div>
+    </div>
+    
+    <!-- Hidden print section - UPDATED -->
+    <div class="print-section" style="display: none;">
+        <div class="print-header">UNFED COUNT: TOMORROW'S B & L</div>
+        <div class="print-subtitle">Report Date: <span id="reportDate"></span></div>
+        <table class="print-table" id="printTable">
+            <!-- Print table will be generated by JavaScript -->
+        </table>
+        <div class="print-footer" style="text-align: center; margin-top: 20px; font-size: 12px;">
+            Generated by DimTools Unfed Count Tracker
+        </div>
+    </div>
+
+    <script>
+        // Define the hospital units
+        const hospitalUnits = [
+            "2FMB", "2LD", "ANTEPARTUM", "4 CENTRAL", "5 CENTRAL", 
+            "5 WEST", "5WNICU", "6 CENTRAL", "PEDS", "7F ICU", 
+            "7E 7S 7N ICU", "7 SOUTH", "8 CENTRAL", "8 WEST", 
+            "8 SOUTH", "9 CENTRAL", "9 WEST", "9 SOUTH", 
+            "10 CENTRAL", "10 WEST"
+        ];
+        
+        // Storage key for saving data
+        const STORAGE_KEY = "unfedCountData";
+        
+        // Initialize data object
+        let unfedData = {};
+        
+        // Function to initialize data from localStorage or create new
+        function initializeData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                unfedData = JSON.parse(savedData);
+            } else {
+                // Initialize with zeros
+                hospitalUnits.forEach(unit => {
+                    unfedData[unit] = { breakfast: 0, lunch: 0 };
+                });
+                saveData();
+            }
+        }
+        
+        // Function to save data to localStorage
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(unfedData));
+        }
+        
+        // Function to update a value
+        function updateValue(unit, meal, value) {
+            unfedData[unit][meal] = parseInt(value) || 0;
+            saveData();
+        }
+        
+        // Function to create a counter cell
+        function createCounterCell(unit, meal) {
+            const cell = document.createElement("td");
+            const counterDiv = document.createElement("div");
+            counterDiv.className = "counter-cell";
+            
+            // Create input
+            const input = document.createElement("input");
+            input.type = "number";
+            input.min = "0";
+            input.max = "999";
+            input.value = unfedData[unit][meal];
+            input.className = "counter-input";
+            input.dataset.unit = unit;
+            input.dataset.meal = meal;
+            
+            // Create increment button
+            const incBtn = document.createElement("button");
+            incBtn.textContent = "+";
+            incBtn.className = "counter-btn";
+            incBtn.dataset.action = "inc";
+            incBtn.dataset.unit = unit;
+            incBtn.dataset.meal = meal;
+            
+            // Create decrement button
+            const decBtn = document.createElement("button");
+            decBtn.textContent = "-";
+            decBtn.className = "counter-btn";
+            decBtn.dataset.action = "dec";
+            decBtn.dataset.unit = unit;
+            decBtn.dataset.meal = meal;
+            
+            // Assemble the counter
+            counterDiv.appendChild(decBtn);
+            counterDiv.appendChild(input);
+            counterDiv.appendChild(incBtn);
+            
+            cell.appendChild(counterDiv);
+            return cell;
+        }
+        
+        // Function to populate the main table
+        function populateTable() {
+            const tableBody = document.getElementById("dataTableBody");
+            tableBody.innerHTML = "";
+            
+            hospitalUnits.forEach(unit => {
+                const row = document.createElement("tr");
+                
+                // Unit name cell
+                const unitCell = document.createElement("td");
+                unitCell.textContent = unit;
+                unitCell.className = "unit-name";
+                row.appendChild(unitCell);
+                
+                // Breakfast counter cell
+                row.appendChild(createCounterCell(unit, "breakfast"));
+                
+                // Lunch counter cell
+                row.appendChild(createCounterCell(unit, "lunch"));
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners to inputs
+            document.querySelectorAll(".counter-input").forEach(input => {
+                input.addEventListener("change", function() {
+                    const unit = this.dataset.unit;
+                    const meal = this.dataset.meal;
+                    updateValue(unit, meal, this.value);
+                });
+                
+                input.addEventListener("input", function() {
+                    // Limit to 3 digits
+                    if (this.value.length > 3) {
+                        this.value = this.value.slice(0, 3);
+                    }
+                });
+            });
+            
+            // Add event listeners to counter buttons
+            document.querySelectorAll(".counter-btn").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    const unit = this.dataset.unit;
+                    const meal = this.dataset.meal;
+                    const action = this.dataset.action;
+                    
+                    const input = document.querySelector(`input[data-unit="${unit}"][data-meal="${meal}"]`);
+                    let value = parseInt(input.value) || 0;
+                    
+                    if (action === "inc") {
+                        value = Math.min(999, value + 1);
+                    } else if (action === "dec") {
+                        value = Math.max(0, value - 1);
+                    }
+                    
+                    input.value = value;
+                    updateValue(unit, meal, value);
+                });
+            });
+        }
+        
+        // Function to populate the print table - OPTIMIZED FOR SINGLE PAGE
+        function populatePrintTable() {
+            const printTable = document.getElementById("printTable");
+            printTable.innerHTML = "";
+            
+            // Create header row
+            const headerRow = document.createElement("tr");
+            headerRow.innerHTML = '<th class="unit-cell">Hospital Unit</th><th class="count-cell">Breakfast</th><th class="count-cell">Lunch</th>';
+            printTable.appendChild(headerRow);
+            
+            // Create data rows with optimized heights
+            hospitalUnits.forEach(unit => {
+                const row = document.createElement("tr");
+                
+                // Unit cell
+                const unitCell = document.createElement("td");
+                unitCell.textContent = unit;
+                unitCell.className = "unit-cell";
+                row.appendChild(unitCell);
+                
+                // Breakfast cell
+                const breakfastCell = document.createElement("td");
+                breakfastCell.textContent = unfedData[unit].breakfast;
+                breakfastCell.className = "count-cell";
+                row.appendChild(breakfastCell);
+                
+                // Lunch cell
+                const lunchCell = document.createElement("td");
+                lunchCell.textContent = unfedData[unit].lunch;
+                lunchCell.className = "count-cell";
+                row.appendChild(lunchCell);
+                
+                printTable.appendChild(row);
+            });
+            
+            // Add current date to report
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            document.getElementById('reportDate').textContent = formattedDate;
+        }
+        
+        // Function to handle printing - OPTIMIZED FOR SINGLE PAGE
+        function handlePrint() {
+            // Update the print table with current data
+            populatePrintTable();
+            
+            // Show the print section
+            const printSection = document.querySelector(".print-section");
+            printSection.style.display = "block";
+            
+            // Force single page layout
+            document.body.style.height = "11in"; // Standard letter height
+            document.body.style.width = "8.5in"; // Standard letter width
+            
+            // Print the page
+            setTimeout(() => {
+                window.print();
+                
+                // Reset after printing
+                setTimeout(() => {
+                    printSection.style.display = "none";
+                    document.body.style.height = "";
+                    document.body.style.width = "";
+                }, 100);
+            }, 100);
+        }
+        
+        // Function to clear all entries
+        function clearAllEntries() {
+            if (confirm("Are you sure you want to clear all entries? This cannot be undone.")) {
+                hospitalUnits.forEach(unit => {
+                    unfedData[unit].breakfast = 0;
+                    unfedData[unit].lunch = 0;
+                });
+                saveData();
+                populateTable();
+                
+                // Show a confirmation message
+                alert("All entries have been cleared.");
+            }
+        }
+        
+        // Initialize the page
+        document.addEventListener("DOMContentLoaded", function() {
+            // Initialize data
+            initializeData();
+            
+            // Populate the table
+            populateTable();
+            
+            // Set up event listeners for buttons
+            document.getElementById("printBtn").addEventListener("click", handlePrint);
+            document.getElementById("clearBtn").addEventListener("click", clearAllEntries);
+            
+            // Add keyboard shortcuts
+            document.addEventListener("keydown", function(event) {
+                // Ctrl+P or Cmd+P for printing
+                if ((event.ctrlKey || event.metaKey) && event.key === "p") {
+                    event.preventDefault();
+                    handlePrint();
+                }
+                
+                // Ctrl+Shift+C to clear all
+                if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "C") {
+                    event.preventDefault();
+                    clearAllEntries();
+                }
+            });
+            
+            // Add a note about keyboard shortcuts
+            console.log("Keyboard shortcuts: Ctrl+P to print, Ctrl+Shift+C to clear all");
+        });
+    </script>
+</body>
+</html>
