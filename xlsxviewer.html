@@ -6,7 +6,7 @@
     <title>DimTools - XLSX Viewer</title>
     <!-- Load SheetJS library upfront -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
+     <style>
         @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
         
         /* Navigation styling matching the template */
@@ -42,15 +42,15 @@
             content: "";
         }
         
-/* Main container */
-.container {
-    width: 100%;
-    max-width: 1400px;
-    min-height: calc(100vh - 120px);  /* ← min-height instead of height */
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
+        /* Main container */
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            min-height: calc(100vh - 120px);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
         
         /* Upload area styling */
         .upload-area {
@@ -83,11 +83,11 @@
             display: none;
             position: relative;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            flex-direction: column;
         }
         
         .spreadsheet-container.active {
             display: flex;
+            flex-direction: column;
         }
         
         /* Toolbar */
