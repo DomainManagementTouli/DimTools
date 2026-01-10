@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DimTools - XLSX Viewer</title>
+    <style>
+        @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
+        
+        /* Navigation styling matching the template */
+        li:has(~ .current)::after {
+            content: "/";
+            margin-inline-start: 10px;
+        }
+
+        li:has(~ li:not(a))::after {
+            content: "/";
+            margin-inline-start: 10px;
+        }
+
+        body {
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+            background-color: #f6eee3;
+            background-size: 20px 20px;
+            background-image: repeating-linear-gradient(0deg, #e5decf, #e5decf 1px, #f6eee3 1px, #f6eee3);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        ul {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        ul li::before {
+            content: "";
+        }
+        
+        /* Main container */
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            height: calc(100vh - 120px);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        /* Upload area styling */
+        .upload-area {
+            background: white;
+            border-radius: 5px;
+            padding: 2rem;
+            text-align: center;
+            border: 2px dashed #8b4513;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            background: #f9f5eb;
+            border-color: #a0522d;
+        }
+        
+        .upload-area.dragover {
+            background: #f0e6d6;
+            border-color: #8b4513;
+            border-style: solid;
+        }
+        
+        /* Spreadsheet container */
+        .spreadsheet-container {
+            flex-grow: 1;
+            background: white;
+            border-radius: 5px;
+            overflow: auto;
+            display: none;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .spreadsheet-container.active {
+            display: block;
+        }
+        
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: #8b4513;
+            color: white;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .toolbar h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        
+        .toolbar button {
+            background: #d2691e;
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .toolbar button:hover {
+            background: #a0522d;
+        }
+        
+        /* Spreadsheet table */
+        #spreadsheet {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: monospace;
+        }
+        
+        #spreadsheet th, #spreadsheet td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+            min-width: 100px;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        #spreadsheet th {
+            background-color: #f5e9d9;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: bold;
+        }
+        
+        #spreadsheet tr:nth-child(even) {
+            background-color: #f9f5eb;
+        }
+        
+        #spreadsheet tr:hover {
+            background-color: #f0e6d6;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* Instructions */
+        .instructions {
+            background: white;
+            border-radius: 5px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .instructions h3 {
+            color: #8b4513;
+            margin-top: 0;
+        }
+        
+        .instructions ul {
+            display: block;
+            margin-left: 1.5rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                height: auto;
+                min-height: calc(100vh - 120px);
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+            
+            #spreadsheet th, #spreadsheet td {
+                padding: 6px 8px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <ul class="paper border shadow large-shadow shadow-hover">
+            <li><a href="csvmatcher.html">CSV with Row 1 Titles</a></li>
+            <li class="current"><a href="#">Spreadsheet Viewer</a></li>
+            <li><a href="about.html">What is DimTools?</a></li>
+        </ul>
+        
+        <div id="uploadArea" class="upload-area paper border shadow">
+            <h2>📊 XLSX Spreadsheet Viewer</h2>
+            <p>Drag & drop an XLSX file here or click to browse</p>
+            <p><small>Supported file types: .xlsx, .xls</small></p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+        </div>
+        
+        <div id="spreadsheetContainer" class="spreadsheet-container">
+            <div class="toolbar">
+                <h3 id="fileName">No file loaded</h3>
+                <button id="closeBtn">Close Spreadsheet</button>
+            </div>
+            <div id="spreadsheetWrapper" style="overflow: auto; max-height: calc(100vh - 200px);">
+                <table id="spreadsheet">
+                    <!-- Spreadsheet will be generated here -->
+                </table>
+            </div>
+        </div>
+        
+        <div class="instructions paper border shadow">
+            <h3>How to use this XLSX Viewer</h3>
+            <ul>
+                <li>Upload an Excel file (.xlsx or .xls format) using the drag & drop area or browse button</li>
+                <li>The spreadsheet will display in a full-screen table with column headers</li>
+                <li>Use the "Close Spreadsheet" button to return to the upload screen</li>
+                <li>All processing happens locally in your browser - no data is uploaded to any server</li>
+                <li>This tool works best with spreadsheets that have a reasonable number of rows/columns</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>DimTools - Local Browser Spreadsheet Viewer | All data stays on your device</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const spreadsheetContainer = document.getElementById('spreadsheetContainer');
+        const spreadsheet = document.getElementById('spreadsheet');
+        const fileName = document.getElementById('fileName');
+        const closeBtn = document.getElementById('closeBtn');
+        
+        // Event Listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            spreadsheetContainer.classList.remove('active');
+            uploadArea.style.display = 'block';
+            spreadsheet.innerHTML = '';
+            fileName.textContent = 'No file loaded';
+            fileInput.value = '';
+        });
+        
+        // Handle the uploaded file
+        function handleFile(file) {
+            // Check if it's an Excel file
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                alert('Please upload an Excel file (.xlsx or .xls)');
+                return;
+            }
+            
+            // Update UI
+            fileName.textContent = `Viewing: ${file.name}`;
+            uploadArea.style.display = 'none';
+            spreadsheetContainer.classList.add('active');
+            
+            // Show loading message
+            spreadsheet.innerHTML = `
+                <tr>
+                    <td colspan="10" style="text-align: center; padding: 2rem;">
+                        <h3>Loading spreadsheet...</h3>
+                        <p>Parsing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                    </td>
+                </tr>
+            `;
+            
+            // Parse the Excel file
+            parseExcelFile(file);
+        }
+        
+        // Parse Excel file using SheetJS library (will be loaded from CDN)
+        function parseExcelFile(file) {
+            // Check if SheetJS is available
+            if (typeof XLSX === 'undefined') {
+                // Load SheetJS from CDN
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+                script.onload = () => processFileWithSheetJS(file);
+                document.head.appendChild(script);
+            } else {
+                processFileWithSheetJS(file);
+            }
+        }
+        
+        function processFileWithSheetJS(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
+                    // Get the first sheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convert to HTML table
+                    const html = XLSX.utils.sheet_to_html(worksheet, {
+                        editable: false,
+                        header: '',
+                        footer: ''
+                    });
+                    
+                    // Parse the HTML string to a DOM element
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    
+                    // Get the table from the parsed HTML
+                    const table = tempDiv.querySelector('table');
+                    
+                    if (table) {
+                        // Clear and replace the spreadsheet
+                        spreadsheet.innerHTML = '';
+                        
+                        // Copy all rows from the parsed table
+                        while (table.rows.length > 0) {
+                            spreadsheet.appendChild(table.rows[0]);
+                        }
+                        
+                        // Add sticky header functionality
+                        makeHeadersSticky();
+                        
+                        // Scroll to top
+                        document.getElementById('spreadsheetWrapper').scrollTop = 0;
+                        
+                        // Add some visual enhancements
+                        enhanceTable();
+                    } else {
+                        throw new Error('Could not parse spreadsheet data');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error parsing Excel file:', error);
+                    spreadsheet.innerHTML = `
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 2rem; color: #8b4513;">
+                                <h3>Error loading spreadsheet</h3>
+                                <p>${error.message}</p>
+                                <p>Please make sure you're uploading a valid Excel file.</p>
+                            </td>
+                        </tr>
+                    `;
+                }
+            };
+            
+            reader.onerror = function() {
+                spreadsheet.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 2rem; color: #8b4513;">
+                            <h3>Error reading file</h3>
+                            <p>Could not read the file. Please try again.</p>
+                        </td>
+                    </tr>
+                `;
+            };
+            
+            // Read the file as an array buffer
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // Make table headers sticky
+        function makeHeadersSticky() {
+            const headers = spreadsheet.querySelectorAll('th');
+            headers.forEach(header => {
+                header.style.position = 'sticky';
+                header.style.top = '0';
+                header.style.zIndex = '10';
+                header.style.backgroundColor = '#f5e9d9';
+            });
+        }
+        
+        // Enhance table with better styling
+        function enhanceTable() {
+            // Add alternating row colors
+            const rows = spreadsheet.querySelectorAll('tr');
+            rows.forEach((row, index) => {
+                if (index > 0) { // Skip header row
+                    if (index % 2 === 0) {
+                        row.style.backgroundColor = '#f9f5eb';
+                    } else {
+                        row.style.backgroundColor = 'white';
+                    }
+                    
+                    // Add hover effect
+                    row.addEventListener('mouseenter', () => {
+                        row.style.backgroundColor = '#f0e6d6';
+                    });
+                    
+                    row.addEventListener('mouseleave', () => {
+                        row.style.backgroundColor = index % 2 === 0 ? '#f9f5eb' : 'white';
+                    });
+                }
+            });
+            
+            // Make cells truncate text with ellipsis
+            const cells = spreadsheet.querySelectorAll('td');
+            cells.forEach(cell => {
+                cell.style.overflow = 'hidden';
+                cell.style.textOverflow = 'ellipsis';
+                cell.style.whiteSpace = 'nowrap';
+                cell.style.maxWidth = '300px';
+                
+                // Add title attribute for full text on hover
+                if (cell.scrollWidth > cell.clientWidth) {
+                    cell.title = cell.textContent;
+                }
+            });
+        }
+        
+        // Initialize with a sample message
+        window.addEventListener('DOMContentLoaded', () => {
+            // Nothing to initialize here
+        });
+    </script>
+</body>
+</html>
