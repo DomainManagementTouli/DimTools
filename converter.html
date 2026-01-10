@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XLSX to CSV Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+        .info-box li {
+            margin: 5px 0;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .hint {
+            font-size: 13px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+        .btn-file {
+            background: #ed8936;
+            color: white;
+        }
+        .btn-file:hover {
+            background: #dd6b20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(237, 137, 54, 0.4);
+        }
+        #status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: 500;
+            display: none;
+        }
+        #status.processing {
+            display: block;
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fbbf24;
+        }
+        #status.success {
+            display: block;
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+        #status.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+        #results {
+            margin-top: 30px;
+        }
+        #resultsContent {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .example {
+            background: #fff9e6;
+            border: 1px solid #ffd966;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .example-title {
+            font-weight: 600;
+            color: #d97706;
+            margin-bottom: 8px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 240px;
+            height: auto;
+        }
+        .sheet-selector {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        .sheet-selector label {
+            margin-bottom: 15px;
+        }
+        .sheet-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .sheet-item {
+            padding: 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .sheet-item:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .sheet-item.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        .sheet-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .sheet-info {
+            font-size: 12px;
+            color: #666;
+        }
+        .sheet-item.selected .sheet-info {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        footer {
+            margin-top: 40px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        footer p {
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>XLSX to CSV Converter</h1>
+            <p>Convert Excel files (.xlsx) to CSV format quickly and easily</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>📋 How This Works</h3>
+                <ul>
+                    <li>Upload your Excel (.xlsx) file</li>
+                    <li>Select which sheet(s) you want to convert</li>
+                    <li>Choose CSV options (delimiter, encoding)</li>
+                    <li>Download each sheet as a separate CSV file</li>
+                    <li><strong>All processing happens in your browser</strong> - no data is uploaded to any server</li>
+                    <li><strong>Supports multiple sheets</strong> - each sheet becomes a separate CSV file</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <div class="section-title">1. Upload Excel File</div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls">
+                <button class="btn-file" onclick="document.getElementById('fileInput').click()">
+                    📁 Choose Excel File
+                </button>
+                <span id="fileName" style="margin-left: 15px; color: #666;"></span>
+            </div>
+
+            <div class="sheet-selector" id="sheetSelector" style="display: none;">
+                <label class="section-title">2. Select Sheet(s) to Convert</label>
+                <div class="hint">Click on sheets to select them. Selected sheets will be converted to CSV.</div>
+                <div class="sheet-list" id="sheetList"></div>
+            </div>
+
+            <div class="section" id="csvOptions" style="display: none;">
+                <div class="section-title">3. CSV Conversion Options</div>
+                
+                <label>Field Delimiter (Separator):</label>
+                <select id="delimiter">
+                    <option value="," selected>Comma ( , ) - Standard CSV</option>
+                    <option value=";">Semicolon ( ; ) - European CSV</option>
+                    <option value="\t">Tab ( \t ) - TSV</option>
+                    <option value="|">Pipe ( | ) - PSV</option>
+                    <option value=" ">Space (   )</option>
+                </select>
+                <div class="hint">Choose the character that separates fields in your CSV</div>
+                
+                <label style="margin-top: 20px;">Include Headers:</label>
+                <select id="includeHeaders">
+                    <option value="yes" selected>Yes - Include column headers</option>
+                    <option value="no">No - Data only</option>
+                </select>
+                
+                <label style="margin-top: 20px;">Text Encoding:</label>
+                <select id="encoding">
+                    <option value="utf-8" selected>UTF-8 (Recommended)</option>
+                    <option value="windows-1252">Windows-1252</option>
+                    <option value="iso-8859-1">ISO-8859-1</option>
+                </select>
+                <div class="hint">UTF-8 supports all characters including international and special characters</div>
+                
+                <div class="example">
+                    <div class="example-title">Example Output:</div>
+                    <div>With Comma delimiter and headers:</div>
+                    <div><code>Name,Age,Email<br>John Doe,30,john@example.com<br>Jane Smith,25,jane@example.com</code></div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="convertToCSV()" id="convertBtn" style="display: none;">
+                    🔄 Convert to CSV
+                </button>
+                <button class="btn-secondary" onclick="downloadAllCSV()" id="downloadAllBtn" style="display: none;">
+                    📥 Download All Selected
+                </button>
+            </div>
+
+            <div id="status"></div>
+
+            <div id="conversionResults" style="display: none;">
+                <div class="section">
+                    <div class="section-title">📊 Conversion Results</div>
+                    <div id="resultsContent"></div>
+                </div>
+            </div>
+
+            <div id="downloadSection" style="display: none; margin-top: 30px;">
+                <div class="section" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3); border: 3px solid #2f855a;">
+                    <div class="section-title" style="color: white; font-size: 24px; text-align: center; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">
+                       ⬇️ Download Your CSV Files ⬇️
+                    </div>
+                    <div id="downloadButtons" style="text-align: center;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        let workbook = null;
+        let selectedSheets = new Set();
+        let csvData = {};
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').textContent = '✓ ' + file.name;
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('convertBtn').style.display = 'block';
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Display sheet selector
+                    displaySheets(workbook);
+                    document.getElementById('sheetSelector').style.display = 'block';
+                    document.getElementById('csvOptions').style.display = 'block';
+                    
+                    setStatus(`✅ Loaded workbook with ${workbook.SheetNames.length} sheet(s)`, 'success');
+                    
+                } catch (error) {
+                    setStatus(`❌ Error reading Excel file: ${error.message}`, 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                setStatus('❌ Error reading file', 'error');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        });
+
+        function displaySheets(workbook) {
+            const sheetList = document.getElementById('sheetList');
+            sheetList.innerHTML = '';
+            
+            workbook.SheetNames.forEach((sheetName, index) => {
+                const sheet = workbook.Sheets[sheetName];
+                const range = XLSX.utils.decode_range(sheet['!ref']);
+                const rowCount = range.e.r - range.s.r + 1;
+                const colCount = range.e.c - range.s.c + 1;
+                
+                const sheetItem = document.createElement('div');
+                sheetItem.className = 'sheet-item';
+                sheetItem.innerHTML = `
+                    <div class="sheet-name">${sheetName}</div>
+                    <div class="sheet-info">${rowCount} rows × ${colCount} columns</div>
+                `;
+                
+                sheetItem.addEventListener('click', function() {
+                    if (selectedSheets.has(sheetName)) {
+                        selectedSheets.delete(sheetName);
+                        sheetItem.classList.remove('selected');
+                    } else {
+                        selectedSheets.add(sheetName);
+                        sheetItem.classList.add('selected');
+                    }
+                    
+                    // Show/hide download all button
+                    if (selectedSheets.size > 0) {
+                        document.getElementById('downloadAllBtn').style.display = 'block';
+                    } else {
+                        document.getElementById('downloadAllBtn').style.display = 'none';
+                    }
+                });
+                
+                sheetList.appendChild(sheetItem);
+            });
+        }
+
+        function setStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = type;
+            statusEl.style.display = 'block';
+        }
+
+        function convertToCSV() {
+            if (!workbook) {
+                setStatus('❌ Please select an Excel file first!', 'error');
+                return;
+            }
+            
+            if (selectedSheets.size === 0) {
+                setStatus('❌ Please select at least one sheet to convert!', 'error');
+                return;
+            }
+            
+            setStatus('⏳ Converting sheets to CSV...', 'processing');
+            document.getElementById('conversionResults').style.display = 'none';
+            document.getElementById('downloadSection').style.display = 'none';
+            
+            // Get conversion options
+            const delimiter = document.getElementById('delimiter').value;
+            const includeHeaders = document.getElementById('includeHeaders').value === 'yes';
+            const encoding = document.getElementById('encoding').value;
+            
+            // Convert selected sheets
+            csvData = {};
+            let resultsHTML = '<div class="info-box">';
+            
+            selectedSheets.forEach(sheetName => {
+                try {
+                    const worksheet = workbook.Sheets[sheetName];
+                    
+                    // Convert to CSV
+                    const csv = XLSX.utils.sheet_to_csv(worksheet, {
+                        FS: delimiter,
+                        RS: '\n',
+                        strip: false,
+                        blankrows: false,
+                        skipHidden: false,
+                        forceQuotes: false
+                    });
+                    
+                    // Remove headers if needed
+                    let finalCSV = csv;
+                    if (!includeHeaders) {
+                        const lines = csv.split('\n');
+                        lines.shift(); // Remove header line
+                        finalCSV = lines.join('\n');
+                    }
+                    
+                    // Store CSV data
+                    csvData[sheetName] = finalCSV;
+                    
+                    // Add to results
+                    const lineCount = finalCSV.split('\n').length;
+                    const charCount = finalCSV.length;
+                    resultsHTML += `<div style="margin-bottom: 15px;">
+                        <strong>${sheetName}:</strong> ${lineCount} lines, ${charCount} characters
+                    </div>`;
+                    
+                } catch (error) {
+                    resultsHTML += `<div style="margin-bottom: 15px; color: #dc3545;">
+                        <strong>${sheetName}:</strong> Error converting - ${error.message}
+                    </div>`;
+                }
+            });
+            
+            resultsHTML += '</div>';
+            resultsHTML += '<div class="hint" style="margin-top: 10px;">Preview of first sheet:</div>';
+            
+            // Show preview of first sheet
+            const firstSheet = Array.from(selectedSheets)[0];
+            if (csvData[firstSheet]) {
+                const previewLines = csvData[firstSheet].split('\n').slice(0, 10);
+                const preview = previewLines.join('\n');
+                resultsHTML += `<pre style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #dee2e6; margin-top: 10px; max-height: 200px; overflow-y: auto;">${escapeHtml(preview)}</pre>`;
+                
+                if (csvData[firstSheet].split('\n').length > 10) {
+                    resultsHTML += '<div class="hint">... and ' + (csvData[firstSheet].split('\n').length - 10) + ' more lines</div>';
+                }
+            }
+            
+            document.getElementById('resultsContent').innerHTML = resultsHTML;
+            document.getElementById('conversionResults').style.display = 'block';
+            
+            // Create download buttons
+            createDownloadButtons();
+            document.getElementById('downloadSection').style.display = 'block';
+            
+            setStatus(`✅ Successfully converted ${selectedSheets.size} sheet(s) to CSV`, 'success');
+        }
+
+        function createDownloadButtons() {
+            const downloadButtons = document.getElementById('downloadButtons');
+            downloadButtons.innerHTML = '';
+            
+            selectedSheets.forEach(sheetName => {
+                if (csvData[sheetName]) {
+                    const button = document.createElement('button');
+                    button.className = 'btn-secondary';
+                    button.style.margin = '5px';
+                    button.innerHTML = `📥 Download ${sheetName}.csv`;
+                    button.onclick = () => downloadCSV(sheetName);
+                    downloadButtons.appendChild(button);
+                }
+            });
+            
+            if (Object.keys(csvData).length > 1) {
+                const zipButton = document.createElement('button');
+                zipButton.className = 'btn-primary';
+                button.style.margin = '5px';
+                zipButton.innerHTML = '📦 Download All as ZIP';
+                zipButton.onclick = downloadAsZip;
+                downloadButtons.appendChild(zipButton);
+            }
+        }
+
+        function downloadCSV(sheetName) {
+            if (!csvData[sheetName]) {
+                setStatus(`❌ No CSV data for sheet: ${sheetName}`, 'error');
+                return;
+            }
+            
+            const delimiter = document.getElementById('delimiter').value;
+            const encoding = document.getElementById('encoding').value;
+            
+            let bom = '';
+            if (encoding === 'utf-8') {
+                bom = '\uFEFF'; // UTF-8 BOM
+            }
+            
+            const blob = new Blob([bom + csvData[sheetName]], { 
+                type: `text/csv;charset=${encoding}` 
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${sheetName}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadAllCSV() {
+            if (Object.keys(csvData).length === 0) {
+                setStatus('❌ No CSV data to download. Please convert first.', 'error');
+                return;
+            }
+            
+            // For single sheet, just download it
+            if (Object.keys(csvData).length === 1) {
+                const sheetName = Object.keys(csvData)[0];
+                downloadCSV(sheetName);
+                return;
+            }
+            
+            // For multiple sheets, create ZIP (simplified - downloads individually)
+            setStatus('📦 Downloading individual CSV files...', 'processing');
+            
+            // Download each file with a small delay
+            let index = 0;
+            const sheets = Object.keys(csvData);
+            
+            function downloadNext() {
+                if (index < sheets.length) {
+                    downloadCSV(sheets[index]);
+                    index++;
+                    setTimeout(downloadNext, 500); // Small delay between downloads
+                } else {
+                    setStatus(`✅ Downloaded ${sheets.length} CSV files`, 'success');
+                }
+            }
+            
+            downloadNext();
+        }
+
+        function downloadAsZip() {
+            setStatus('⚠️ ZIP download requires additional libraries. Downloading files individually instead.', 'processing');
+            downloadAllCSV();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Select all sheets by default when clicking convert
+        document.getElementById('convertBtn').addEventListener('click', function() {
+            if (workbook && selectedSheets.size === 0) {
+                // Auto-select all sheets
+                selectedSheets = new Set(workbook.SheetNames);
+                const sheetItems = document.querySelectorAll('.sheet-item');
+                sheetItems.forEach(item => item.classList.add('selected'));
+                document.getElementById('downloadAllBtn').style.display = 'block';
+            }
+        });
+    </script>
+    
+    <footer>
+        <p>This tool converts Excel (.xlsx) files to CSV format entirely in your browser. All processing happens locally - no data is ever sent to a server. You can convert individual sheets or multiple sheets at once, with options for custom delimiters and encodings. Perfect for data migration, analysis, or when you need to use Excel data in applications that only accept CSV format.</p>
+        <p style="margin-top: 10px; font-size: 12px;">Built with SheetJS - Entire process is client-side and private</p>
+    </footer>
+</body>
+</html>
