@@ -42,15 +42,15 @@
             content: "";
         }
         
-        /* Main container */
-        .container {
-            width: 100%;
-            max-width: 1400px;
-            height: calc(100vh - 120px);
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
+/* Main container */
+.container {
+    width: 100%;
+    max-width: 1400px;
+    min-height: calc(100vh - 120px);  /* ← min-height instead of height */
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
         
         /* Upload area styling */
         .upload-area {
