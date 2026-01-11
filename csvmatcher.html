@@ -1,317 +1,572 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Universal CSV Row Matcher</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DimTools - CSV Row Matcher</title>
+    <!-- Load required libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        * {
+        @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
+        
+        /* Navigation styling matching the template */
+        li:has(~ .current)::after {
+            content: "/";
+            margin-inline-start: 10px;
+        }
+
+        li:has(~ li:not(a))::after {
+            content: "/";
+            margin-inline-start: 10px;
+        }
+
+        body {
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+            background-color: #f6eee3;
+            background-size: 20px 20px;
+            background-image: repeating-linear-gradient(0deg, #e5decf, #e5decf 1px, #f6eee3 1px, #f6eee3);
             margin: 0;
-            padding: 0;
+            padding: 20px;
             box-sizing: border-box;
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+
+        ul {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
+
+        ul li::before {
+            content: "";
+        }
+        
+        /* Main container */
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 1200px;
+            min-height: calc(100vh - 120px);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        /* Upload area styling */
+        .upload-area {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
+            border-radius: 5px;
+            padding: 2rem;
             text-align: center;
+            border: 2px dashed #8b4513;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
         }
-        .header h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
+        
+        .upload-area:hover {
+            background: #f9f5eb;
+            border-color: #a0522d;
         }
-        .header p {
-            font-size: 16px;
-            opacity: 0.9;
+        
+        .upload-area.dragover {
+            background: #f0e6d6;
+            border-color: #8b4513;
+            border-style: solid;
         }
-        .content {
-            padding: 30px;
+        
+        /* Configuration sections */
+        .config-section {
+            background: white;
+            border-radius: 5px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        
+        .section-title {
+            color: #8b4513;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #e5decf;
+            padding-bottom: 0.5rem;
+        }
+        
+        .option-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .option-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #5d4037;
+        }
+        
+        .option-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5decf;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        
+        .option-group input:focus {
+            outline: none;
+            border-color: #8b4513;
+            background: #f9f5eb;
+        }
+        
+        .hint {
+            font-size: 0.85rem;
+            color: #795548;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        
+        /* Example boxes */
+        .example-box {
+            background: #fff9e6;
+            border: 1px solid #ffd966;
+            border-radius: 5px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .example-title {
+            font-weight: bold;
+            color: #d97706;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Info box */
         .info-box {
             background: #f0f4ff;
             border-left: 4px solid #667eea;
-            padding: 15px;
-            margin-bottom: 25px;
-            border-radius: 4px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border-radius: 5px;
         }
+        
         .info-box h3 {
             color: #667eea;
-            margin-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 0.75rem;
         }
+        
         .info-box ul {
-            margin-left: 20px;
-            color: #555;
-        }
-        .info-box li {
-            margin: 5px 0;
-        }
-        .section {
-            margin-bottom: 30px;
-        }
-        .section-title {
-            font-size: 20px;
-            color: #333;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        label {
             display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
+            margin-left: 1.5rem;
         }
-        input[type="text"], textarea, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border 0.3s;
+        
+        .info-box li {
+            margin-bottom: 0.5rem;
         }
-        input[type="text"]:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        .hint {
-            font-size: 13px;
-            color: #888;
-            margin-top: 5px;
-        }
+        
+        /* Button groups */
         .button-group {
             display: flex;
-            gap: 10px;
+            gap: 1rem;
             flex-wrap: wrap;
+            margin: 1.5rem 0;
         }
-        button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
+        
+        .button-group button {
+            flex: 1;
+            min-width: 150px;
         }
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        .btn-secondary {
-            background: #48bb78;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background: #38a169;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
-        }
-        .btn-file {
-            background: #ed8936;
-            color: white;
-        }
-        .btn-file:hover {
-            background: #dd6b20;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(237, 137, 54, 0.4);
-        }
-        #status {
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
-            font-weight: 500;
+        
+        /* Status messages */
+        .status-message {
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
             display: none;
         }
-        #status.processing {
+        
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
             display: block;
-            background: #fef3c7;
-            color: #92400e;
-            border: 1px solid #fbbf24;
         }
-        #status.success {
+        
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
             display: block;
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #34d399;
         }
-        #status.error {
+        
+        .status-message.processing {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
             display: block;
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #f87171;
         }
-        #results {
-            margin-top: 30px;
+        
+        /* Results area */
+        .results-area {
+            background: white;
+            border-radius: 5px;
+            padding: 1.5rem;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        #resultsContent {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 20px;
-            max-height: 500px;
+        
+        .results-area.active {
+            display: block;
+        }
+        
+        .results-content {
+            background: #f9f5eb;
+            border: 1px solid #e5decf;
+            border-radius: 5px;
+            padding: 1rem;
+            max-height: 400px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.6;
+            font-size: 0.9rem;
             white-space: pre-wrap;
+            margin-top: 1rem;
         }
-        .example {
-            background: #fff9e6;
-            border: 1px solid #ffd966;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-        .example-title {
-            font-weight: 600;
-            color: #d97706;
-            margin-bottom: 8px;
-        }
-        input[type="file"] {
+        
+        /* Download section */
+        .download-section {
+            background: white;
+            border-radius: 5px;
+            padding: 1.5rem;
             display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 1.5rem;
+            border: 2px solid #38a169;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+        
+        .download-section.active {
+            display: block;
+        }
+        
+        .download-header {
+            color: white;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .download-options {
+            background: white;
+            border-radius: 5px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .format-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #38a169;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #2f855a;
+            cursor: pointer;
+            background: white;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #e5decf;
+        }
+        
+        .footer p {
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+            font-style: italic;
+        }
+        
+        /* Instructions */
+        .instructions {
+            background: white;
+            border-radius: 5px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .instructions h3 {
+            color: #8b4513;
+            margin-top: 0;
+        }
+        
+        .instructions ul {
+            display: block;
+            margin-left: 1.5rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #8b4513;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                height: auto;
+                min-height: calc(100vh - 120px);
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .button-group button {
+                width: 100%;
+            }
+            
+            .upload-area {
+                padding: 1.5rem;
+            }
+        }
+        
+        /* File name display */
+        .file-name {
+            display: inline-block;
+            margin-left: 1rem;
+            color: #5d4037;
+            font-weight: bold;
         }
     </style>
-      <link rel="icon" type="image/png" href="csvmatcherlogo.png">
-
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>CSV Row Matcher : Set-valued function mapper</h1>
+        <ul class="paper border shadow large-shadow shadow-hover">
+            <li class="current"><a href="#">CSV Row Matcher</a></li>
+            <li><a href="xlsxviewer.html">XLSX Viewer</a></li>
+            <li><a href="xlsxtocsv.html">XLSX to CSV</a></li>
+            <li><a href="about.html">What is DimTools?</a></li>
+        </ul>
+        
+        <div id="uploadArea" class="upload-area paper border shadow">
+            <h2>🔍 CSV Row Matcher: Set-Valued Function Mapper</h2>
             <p>Find rows based on cell content and extract specific columns where row/column identifiers are merged into the table</p>
+            <p><small>Drag & drop a CSV file here or click to browse</small></p>
+            <input type="file" id="fileInput" accept=".csv" style="display: none;">
         </div>
-<img src="csvmatcherlogo.png" 
-     alt="CSVM Logo" 
-     style="position: absolute; 
-            top: 5px; 
-            left: 5px; 
-            width: 240px; 
-            height: auto;  <!-- Keeps aspect ratio -->
-            z-index: 1000;">
-        <div class="content">
-            <div class="info-box">
-                <h3>📋 How This Works</h3>
-                <ul>
-                    <li>Upload your CSV file</li>
-                    <li>Specify which columns to search in (e.g., "R:BGB" or "A,C,D")</li>
-                    <li>Enter the text value to search for (e.g., "HAS", "Yes", "Active")</li>
-                    <li>Choose which columns you want to see in the output</li>
-                    <li><strong>NEW:</strong> Shows ALL matching headers for each row where value appears</li>
-                    <li><strong>NEW:</strong> Output format: [Row Identifier], [Header1], [Header2], ...</li>
-                </ul>
-            </div>
-
-            <div class="section">
-                <div class="section-title">1. Upload CSV File</div>
-                <input type="file" id="fileInput" accept=".csv">
-                <button class="btn-file" onclick="document.getElementById('fileInput').click()">
-                    📁 Choose CSV File
-                </button>
-                <span id="fileName" style="margin-left: 15px; color: #666;"></span>
-            </div>
-
-            <div class="section">
-                <div class="section-title">2. Configure Search</div>
-                
-                <label>Column Range to Search In:</label>
+        
+        <div class="info-box">
+            <h3>📋 How This Works</h3>
+            <ul>
+                <li>Upload your CSV file</li>
+                <li>Specify which columns to search in (e.g., "R:BGB" or "A,C,D")</li>
+                <li>Enter the text value to search for (e.g., "HAS", "Yes", "Active")</li>
+                <li>Choose which columns you want to see in the output</li>
+                <li><strong>NEW:</strong> Shows ALL matching headers for each row where value appears</li>
+                <li><strong>NEW:</strong> Output format: [Row Identifier], [Header1], [Header2], ...</li>
+            </ul>
+        </div>
+        
+        <div class="config-section paper border shadow">
+            <h3 class="section-title">1. Upload CSV File</h3>
+            <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                📁 Choose CSV File
+            </button>
+            <span id="fileName" class="file-name">No file selected</span>
+        </div>
+        
+        <div class="config-section paper border shadow">
+            <h3 class="section-title">2. Configure Search</h3>
+            
+            <div class="option-group">
+                <label for="columnRange">Column Range to Search In:</label>
                 <input type="text" id="columnRange" placeholder="e.g., R:BGB or A,C,E,F or D:Z">
                 <div class="hint">Use ":" for ranges (A:Z) or commas for specific columns (A,B,C)</div>
                 
-                <div class="example">
+                <div class="example-box">
                     <div class="example-title">Examples:</div>
                     <div>• <code>R:BGB</code> - Search in columns R through BGB</div>
                     <div>• <code>A,C,D</code> - Search only in columns A, C, and D</div>
                     <div>• <code>B:F</code> - Search in columns B through F</div>
                 </div>
-
-                <label style="margin-top: 20px;">Search For This Value:</label>
+            </div>
+            
+            <div class="option-group">
+                <label for="searchValue">Search For This Value:</label>
                 <input type="text" id="searchValue" placeholder="e.g., HAS, Yes, Active, TRUE">
                 <div class="hint">Case-insensitive search</div>
             </div>
-
-            <div class="section">
-                <div class="section-title">3. Choose Output Columns</div>
-                
-                <label>Columns to Display in Results:</label>
+        </div>
+        
+        <div class="config-section paper border shadow">
+            <h3 class="section-title">3. Choose Output Columns</h3>
+            
+            <div class="option-group">
+                <label for="outputColumns">Columns to Display in Results:</label>
                 <input type="text" id="outputColumns" placeholder="e.g., A or A,B,C">
                 <div class="hint">First column will be used as the row identifier. Example: "A" uses Column A values as identifiers</div>
                 
-                <div class="example">
+                <div class="example-box">
                     <div class="example-title">Example Output Format:</div>
                     <div><strong>Input:</strong> Burger, 1, 0, 1, 1</div>
                     <div><strong>Searching for "1" in columns B:E</strong></div>
                     <div><strong>Output:</strong> Burger, HasGluten, HasDairy, HasEggs</div>
-                    <div style="margin-top: 5px; color: #666;">(Shows row identifier + all header names where value was found)</div>
+                    <div style="margin-top: 0.5rem; color: #666;">(Shows row identifier + all header names where value was found)</div>
                 </div>
-            </div>
-
-            <div class="button-group">
-                <button class="btn-primary" onclick="processCSV()">🚀 Process CSV</button>
-            </div>
-
-            <div id="status"></div>
-
-            <div id="downloadSection" style="display:none; margin-top: 30px;">
-                <div class="section" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3); border: 3px solid #2f855a;">
-                    <div class="section-title" style="color: white; font-size: 24px; text-align: center; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">
-                       ⬇️ 4. DOWNLOAD YOUR RESULTS ⬇️
-                    </div>
-                    <label style="color: white; font-size: 18px; font-weight: 700; text-align: center; display: block; margin-bottom: 12px;">
-                        📁 Choose Your Download Format:
-                    </label>
-                    <select id="formatSelect" style="font-size: 16px; font-weight: 600; padding: 15px 40px 15px 15px; border: 5px solid #ffd700; background: white; color: #2f855a; cursor: pointer; box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.5); width: 85%; margin: 0 auto; display: block; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27https://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%232f855a%27 stroke-width=%273%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 10px center; background-size: 24px;">
-                        <option value="txt">📄 TXT - Plain Text</option>
-                        <option value="csv">📊 CSV - Comma Separated Values</option>
-                        <option value="json">🔧 JSON - JavaScript Object Notation</option>
-                        <option value="xlsx">📈 XLSX - Excel Spreadsheet</option>
-                        <option value="pdf">📕 PDF - Portable Document Format</option>
-                    </select>
-                    <div style="margin-top: 20px; text-align: center;">
-                        <button class="btn-secondary" onclick="downloadResults()" style="font-size: 18px; padding: 15px 40px; background: white; color: #38a169; border: 3px solid white; box-shadow: 0 6px 16px rgba(0,0,0,0.3); font-weight: 700;">
-                            💾 DOWNLOAD NOW
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="results" style="display:none;">
-                <div class="section-title">📊 Results Preview</div>
-                <div id="resultsContent"></div>
             </div>
         </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="processCSV()">🚀 Process CSV</button>
+        </div>
+        
+        <div id="statusMessage" class="status-message"></div>
+        
+        <div id="resultsArea" class="results-area">
+            <h3 class="section-title">📊 Results Preview</h3>
+            <div class="results-content" id="resultsContent"></div>
+        </div>
+        
+        <div id="downloadSection" class="download-section">
+            <div class="download-header">
+                <h3>⬇️ 4. DOWNLOAD YOUR RESULTS ⬇️</h3>
+                <p>📁 Choose Your Download Format:</p>
+            </div>
+            
+            <div class="download-options">
+                <select id="formatSelect" class="format-select">
+                    <option value="txt">📄 TXT - Plain Text</option>
+                    <option value="csv">📊 CSV - Comma Separated Values</option>
+                    <option value="json">🔧 JSON - JavaScript Object Notation</option>
+                    <option value="xlsx">📈 XLSX - Excel Spreadsheet</option>
+                    <option value="pdf">📕 PDF - Portable Document Format</option>
+                </select>
+                
+                <div style="margin-top: 1.5rem; text-align: center;">
+                    <button class="btn-secondary" onclick="downloadResults()" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                        💾 DOWNLOAD NOW
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions paper border shadow">
+            <h3>About This Tool</h3>
+            <p>This tool addresses a fundamental but overlooked data problem: spreadsheets forced to act as entire relational databases within a single table. When complex information gets flattened into a grid, the meaning of the data—what the rows and columns represent—gets embedded within the data itself, typically with column headers in Row 1.</p>
+            <p>This application helps you navigate that structure. It locates all cells matching your search term and intelligently retrieves the proper identifiers: the value from your specified row (like an item name) and the corresponding column header (like a property or category) for every match. It outputs these paired results in your choice of cleanly formatted PDF, CSV, JSON, XLSX, or TXT files.</p>
+            <p>The entire process is secure and private. All parsing, searching, and file generation happens client-side in your browser. No data is ever sent to a server—it never leaves your machine. You get the power of a data processing utility with the absolute privacy of a local application. The code is open for inspection, confirming that no data or metadata is ever collected or transmitted. -Dimitry III</p>
+        </div>
+        
+        <div class="footer">
+            <p>DimTools - CSV Row Matcher | All data processing happens locally in your browser</p>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <h3>Processing CSV file...</h3>
+        <p>Searching for matches and analyzing data</p>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileName = document.getElementById('fileName');
+        const statusMessage = document.getElementById('statusMessage');
+        const resultsArea = document.getElementById('resultsArea');
+        const resultsContent = document.getElementById('resultsContent');
+        const downloadSection = document.getElementById('downloadSection');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        // State variables
         let resultsData = '';
         let matchedRows = [];
         let currentFile = null;
         let headers = [];
-
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            currentFile = e.target.files[0];
-            if (currentFile) {
-                document.getElementById('fileName').textContent = '✓ ' + currentFile.name;
+        
+        // Event Listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                currentFile = e.target.files[0];
+                fileName.textContent = '✓ ' + currentFile.name;
+                showStatus(`Ready to process: ${currentFile.name}`, 'success');
             }
         });
-
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.name.match(/\.csv$/i)) {
+                    currentFile = file;
+                    fileName.textContent = '✓ ' + file.name;
+                    showStatus(`Ready to process: ${file.name}`, 'success');
+                } else {
+                    showStatus('❌ Please upload a CSV file', 'error');
+                }
+            }
+        });
+        
+        // Column letter to index conversion
         function columnToIndex(col) {
             col = col.toUpperCase();
             let index = 0;
@@ -320,7 +575,8 @@
             }
             return index - 1;
         }
-
+        
+        // Parse column range string
         function parseColumnRange(rangeStr) {
             rangeStr = rangeStr.trim().toUpperCase();
             let columns = [];
@@ -343,32 +599,37 @@
             
             return columns;
         }
-
-        function setStatus(message, type) {
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = message;
-            statusEl.className = type;
+        
+        // Show status message
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
         }
-
+        
+        // Process CSV file
         function processCSV() {
             if (!currentFile) {
-                setStatus('❌ Please select a CSV file first!', 'error');
+                showStatus('❌ Please select a CSV file first!', 'error');
                 return;
             }
-
+            
             const columnRange = document.getElementById('columnRange').value;
             const searchValue = document.getElementById('searchValue').value;
             const outputColumns = document.getElementById('outputColumns').value;
-
+            
             if (!columnRange || !searchValue || !outputColumns) {
-                setStatus('❌ Please fill in all fields!', 'error');
+                showStatus('❌ Please fill in all fields!', 'error');
                 return;
             }
-
-            setStatus('⏳ Processing your CSV file...', 'processing');
-            document.getElementById('results').style.display = 'none';
-            document.getElementById('downloadSection').style.display = 'none';
-
+            
+            // Show loading overlay
+            loadingOverlay.classList.add('active');
+            showStatus('⏳ Processing your CSV file...', 'processing');
+            
+            // Hide previous results
+            resultsArea.classList.remove('active');
+            downloadSection.classList.remove('active');
+            
             Papa.parse(currentFile, {
                 complete: function(results) {
                     try {
@@ -469,27 +730,28 @@
                         output += '╚══════════════════════════════════════════════════════════════╝\n';
                         
                         resultsData = output;
-                        document.getElementById('resultsContent').textContent = output;
-                        document.getElementById('results').style.display = 'block';
+                        resultsContent.textContent = output;
                         
-                        // Show download section
-                        const downloadSection = document.getElementById('downloadSection');
-                        if (downloadSection) {
-                            downloadSection.style.display = 'block';
-                        }
+                        // Show results and download section
+                        resultsArea.classList.add('active');
+                        downloadSection.classList.add('active');
                         
-                        setStatus(`✅ Success! Found ${matchCount} matching rows with ${matchedRows.reduce((total, row) => total + row.matchedHeaders.length, 0)} total matches.`, 'success');
+                        showStatus(`✅ Success! Found ${matchCount} matching rows with ${matchedRows.reduce((total, row) => total + row.matchedHeaders.length, 0)} total matches.`, 'success');
                         
                     } catch (error) {
-                        setStatus(`❌ Error: ${error.message}`, 'error');
+                        showStatus(`❌ Error: ${error.message}`, 'error');
+                    } finally {
+                        loadingOverlay.classList.remove('active');
                     }
                 },
                 error: function(error) {
-                    setStatus(`❌ Failed to parse CSV: ${error.message}`, 'error');
+                    showStatus(`❌ Failed to parse CSV: ${error.message}`, 'error');
+                    loadingOverlay.classList.remove('active');
                 }
             });
         }
-
+        
+        // Download results in selected format
         function downloadResults() {
             const format = document.getElementById('formatSelect').value;
             
@@ -511,20 +773,24 @@
                     break;
             }
         }
-
+        
+        // Download as TXT
         function downloadTXT() {
             const blob = new Blob([resultsData], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = 'csv_match_results.txt';
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
-
+        
+        // Download as CSV
         function downloadCSV() {
             if (matchedRows.length === 0) {
-                alert('No data to download');
+                showStatus('❌ No data to download', 'error');
                 return;
             }
             
@@ -546,10 +812,13 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = 'csv_match_results.csv';
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
-
+        
+        // Download as JSON
         function downloadJSON() {
             const jsonData = {
                 metadata: {
@@ -568,13 +837,16 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = 'csv_match_results.json';
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
-
+        
+        // Download as XLSX
         function downloadXLSX() {
             if (matchedRows.length === 0) {
-                alert('No data to download');
+                showStatus('❌ No data to download', 'error');
                 return;
             }
             
@@ -596,7 +868,8 @@
             
             XLSX.writeFile(wb, 'csv_match_results.xlsx');
         }
-
+        
+        // Download as PDF
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -660,11 +933,5 @@
             doc.save('csv_match_results.pdf');
         }
     </script>
-    <footer>            <center><p>This tool addresses a fundamental but overlooked data problem: spreadsheets forced to act as entire relational databases within a single table. When complex information gets flattened into a grid, the meaning of the data—what the rows and columns represent—gets embedded within the data itself, typically with column headers in Row 1.
-
-This application helps you navigate that structure. It locates all cells matching your search term and intelligently retrieves the proper identifiers: the value from your specified row (like an item name) and the corresponding column header (like a property or category) for every match. It outputs these paired results in your choice of cleanly formatted PDF, CSV, JSON, XLSX, or TXT files.
-
-The entire process is secure and private. All parsing, searching, and file generation happens client-side in your browser. No data is ever sent to a server—it never leaves your machine. You get the power of a data processing utility with the absolute privacy of a local application. The code is open for inspection, confirming that no data or metadata is ever collected or transmitted. -Dimitry III </p></center>
-    </footer>
 </body>
 </html>
