@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chime Statement Parser - BULLDOZER MODE</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Courier New', monospace; background: #0a0a0a; color: #00ff00; padding: 20px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #00ff00; }
+        h1 { color: #00ff00; font-size: 3em; text-shadow: 0 0 10px #00ff00; margin-bottom: 10px; }
+        .warning { color: #ff4444; background: #220000; padding: 15px; border-radius: 10px; margin: 20px 0; border: 2px solid #ff4444; }
+        
+        .upload-area {
+            background: #111;
+            border: 4px dashed #333;
+            padding: 50px;
+            text-align: center;
+            margin: 30px 0;
+            transition: all 0.3s;
+        }
+        .upload-area.highlight { border-color: #00ff00; background: #002200; }
+        .upload-btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 20px 50px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .file-info {
+            background: #111;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #333;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin: 30px 0;
+            justify-content: center;
+        }
+        .btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        .btn-go { background: #00ff00; color: #000; }
+        .btn-go:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .btn-clear { background: #ff0000; color: white; }
+        
+        .progress {
+            background: #111;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #333;
+            display: none;
+        }
+        .progress-bar {
+            height: 30px;
+            background: #222;
+            margin: 20px 0;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .results {
+            background: #111;
+            padding: 30px;
+            margin: 30px 0;
+            border: 2px solid #00ff00;
+            display: none;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .stat {
+            background: #222;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #00ff00;
+        }
+        .stat .number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #00ff00;
+            margin: 10px 0;
+        }
+        
+        .download-btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 25px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            margin: 40px auto;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .debug {
+            background: #111;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ff8800;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .debug-title {
+            color: #ff8800;
+            margin-bottom: 10px;
+        }
+        
+        .error {
+            background: #220000;
+            color: #ff4444;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #ff4444;
+            display: none;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #000;
+        }
+        th {
+            background: #003300;
+            padding: 15px;
+            border: 1px solid #00ff00;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        td {
+            padding: 12px;
+            border: 1px solid #333;
+        }
+        tr:nth-child(even) {
+            background: #0a0a0a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 CHIME STATEMENT BULLDOZER PARSER</h1>
+            <p>Extracts EVERY transaction from Chime PDFs - NO DATA LOST</p>
+        </header>
+        
+        <div class="warning">
+            ⚠️ WARNING: This parser uses AGGRESSIVE text extraction to get ALL transactions.<br>
+            It WILL find hundreds or thousands of rows from your PDFs.
+        </div>
+        
+        <div class="upload-area" id="uploadArea">
+            <h2>DROP CHIME PDFS HERE</h2>
+            <p>Upload up to 300 PDF files at once</p>
+            <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                SELECT PDF FILES
+            </button>
+            <div class="file-info">
+                <div id="fileCount">No files selected</div>
+                <div id="fileList"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="processBtn" class="btn btn-go" disabled>🚀 EXTRACT ALL TRANSACTIONS</button>
+            <button id="clearBtn" class="btn btn-clear">🗑️ CLEAR ALL</button>
+        </div>
+        
+        <div class="error" id="errorBox"></div>
+        
+        <div class="progress" id="progressContainer">
+            <h3 id="statusText">PROCESSING...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="progressText">0%</div>
+            
+            <div class="debug" id="debugOutput">
+                <div class="debug-title">DEBUG OUTPUT:</div>
+                <div id="debugContent"></div>
+            </div>
+        </div>
+        
+        <div class="results" id="results">
+            <h2 style="color: #00ff00; text-align: center;">✅ EXTRACTION COMPLETE!</h2>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div>FILES PROCESSED</div>
+                    <div class="number" id="statFiles">0</div>
+                </div>
+                <div class="stat">
+                    <div>TRANSACTIONS FOUND</div>
+                    <div class="number" id="statTransactions">0</div>
+                </div>
+                <div class="stat">
+                    <div>DATE RANGE</div>
+                    <div class="number" id="statDates">N/A</div>
+                </div>
+                <div class="stat">
+                    <div>CSV SIZE</div>
+                    <div class="number" id="statSize">0 KB</div>
+                </div>
+            </div>
+            
+            <h3>SAMPLE OF EXTRACTED DATA (First 100 rows):</h3>
+            <div style="max-height: 500px; overflow-y: auto; background: #000; padding: 10px;">
+                <table id="sampleTable">
+                    <thead>
+                        <tr>
+                            <th>DATE</th>
+                            <th>DESCRIPTION</th>
+                            <th>TYPE</th>
+                            <th>AMOUNT</th>
+                            <th>NET AMOUNT</th>
+                            <th>SETTLEMENT DATE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sampleBody">
+                        <!-- Sample data will appear here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <button id="downloadBtn" class="download-btn">
+                ⬇ DOWNLOAD FULL CSV (ALL TRANSACTIONS)
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <script>
+        // Setup PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+        
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileCount = document.getElementById('fileCount');
+        const fileList = document.getElementById('fileList');
+        const processBtn = document.getElementById('processBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const errorBox = document.getElementById('errorBox');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const statusText = document.getElementById('statusText');
+        const debugOutput = document.getElementById('debugOutput');
+        const debugContent = document.getElementById('debugContent');
+        const results = document.getElementById('results');
+        const sampleBody = document.getElementById('sampleBody');
+        const statFiles = document.getElementById('statFiles');
+        const statTransactions = document.getElementById('statTransactions');
+        const statDates = document.getElementById('statDates');
+        const statSize = document.getElementById('statSize');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        let files = [];
+        let allTransactions = [];
+        let processing = false;
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('highlight');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('highlight');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('highlight');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(newFiles) {
+            const pdfFiles = Array.from(newFiles).filter(f => 
+                f.name.toLowerCase().endsWith('.pdf') || 
+                f.type === 'application/pdf'
+            );
+            
+            if (pdfFiles.length === 0) {
+                showError('No PDF files found. Please upload Chime statement PDFs only.');
+                return;
+            }
+            
+            if (files.length + pdfFiles.length > 300) {
+                showError('Maximum 300 files allowed. Please select fewer files.');
+                return;
+            }
+            
+            files = [...files, ...pdfFiles];
+            updateFileList();
+            processBtn.disabled = false;
+            hideError();
+        }
+        
+        function updateFileList() {
+            fileCount.textContent = `${files.length} PDF file${files.length !== 1 ? 's' : ''} ready for processing`;
+            fileList.innerHTML = '';
+            
+            files.slice(0, 10).forEach((file, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = 'padding: 5px; border-bottom: 1px solid #333;';
+                div.textContent = `${index + 1}. ${file.name} (${formatSize(file.size)})`;
+                fileList.appendChild(div);
+            });
+            
+            if (files.length > 10) {
+                const more = document.createElement('div');
+                more.style.cssText = 'padding: 10px; color: #00ff00; text-align: center;';
+                more.textContent = `...and ${files.length - 10} more files`;
+                fileList.appendChild(more);
+            }
+        }
+        
+        function formatSize(bytes) {
+            return (bytes / 1024).toFixed(1) + ' KB';
+        }
+        
+        clearBtn.addEventListener('click', () => {
+            files = [];
+            allTransactions = [];
+            updateFileList();
+            processBtn.disabled = true;
+            results.style.display = 'none';
+            hideError();
+        });
+        
+        processBtn.addEventListener('click', async () => {
+            if (processing || files.length === 0) return;
+            
+            processing = true;
+            hideError();
+            progressContainer.style.display = 'block';
+            results.style.display = 'none';
+            processBtn.disabled = true;
+            debugOutput.style.display = 'block';
+            
+            allTransactions = [];
+            let processedFiles = 0;
+            
+            // Process each file
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Update progress
+                const percent = Math.round(((i + 1) / files.length) * 100);
+                progressFill.style.width = `${percent}%`;
+                progressText.textContent = `${percent}%`;
+                statusText.textContent = `Processing ${i + 1}/${files.length}: ${file.name}`;
+                
+                // Show debug info
+                debugContent.innerHTML += `<div style="color: #ff8800;">[${new Date().toLocaleTimeString()}] Processing: ${file.name}</div>`;
+                debugContent.scrollTop = debugContent.scrollHeight;
+                
+                try {
+                    const transactions = await bulldozePDF(file);
+                    allTransactions.push(...transactions);
+                    processedFiles++;
+                    
+                    debugContent.innerHTML += `<div style="color: #00ff00;">✓ Found ${transactions.length} transactions in this file</div>`;
+                } catch (error) {
+                    debugContent.innerHTML += `<div style="color: #ff4444;">✗ Error: ${error.message}</div>`;
+                    console.error('Error:', error);
+                }
+                
+                // Keep UI responsive
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            // Finalize
+            debugContent.innerHTML += `<div style="color: #00ff00; font-weight: bold;">TOTAL TRANSACTIONS EXTRACTED: ${allTransactions.length}</div>`;
+            
+            // Generate CSV
+            const csv = generateCSV(allTransactions);
+            
+            // Update stats
+            updateStats(processedFiles, allTransactions, csv);
+            
+            // Show sample
+            showSample(allTransactions);
+            
+            // Setup download
+            downloadBtn.onclick = () => {
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `chime_all_transactions_${allTransactions.length}_rows_${Date.now()}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+            
+            // Show results
+            progressContainer.style.display = 'none';
+            results.style.display = 'block';
+            processing = false;
+        });
+        
+        async function bulldozePDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    try {
+                        const typedArray = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument(typedArray).promise;
+                        let fullText = '';
+                        
+                        // Extract text from ALL pages with ALL text
+                        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                            const page = await pdf.getPage(pageNum);
+                            
+                            // Get text with highest detail
+                            const textContent = await page.getTextContent({
+                                disableCombineTextItems: true, // Keep all text items separate
+                                includeMarkedContent: true
+                            });
+                            
+                            // Build text preserving order
+                            const pageText = textContent.items
+                                .map(item => item.str)
+                                .join(' ');
+                            
+                            fullText += pageText + '\n\n'; // Extra newline between pages
+                        }
+                        
+                        // Use aggressive parsing to find ALL transactions
+                        const transactions = parseAllTransactions(fullText);
+                        resolve(transactions);
+                        
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        function parseAllTransactions(text) {
+            const transactions = [];
+            
+            // Split into lines
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            
+            // Find potential transaction sections
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // Look for date patterns anywhere in the text
+                const datePattern = /\b(\d{1,2}\/\d{1,2}\/\d{4})\b/g;
+                const datesInLine = [...line.matchAll(datePattern)];
+                
+                if (datesInLine.length > 0) {
+                    // This might be a transaction line or contain transaction data
+                    const transaction = extractTransactionFromLine(line, lines[i + 1], lines[i + 2]);
+                    if (transaction) {
+                        transactions.push(transaction);
+                        
+                        // Skip ahead if we consumed multiple lines
+                        if (transaction.consumedLines > 1) {
+                            i += transaction.consumedLines - 1;
+                        }
+                    }
+                }
+            }
+            
+            // Filter out duplicates and invalid entries
+            return filterAndCleanTransactions(transactions);
+        }
+        
+        function extractTransactionFromLine(line, nextLine, secondNextLine) {
+            // Pattern to find dollar amounts
+            const amountPattern = /(-?\$\d+(?:\.\d{2})?)/g;
+            
+            // Find all dates in the line
+            const datePattern = /\b(\d{1,2}\/\d{1,2}\/\d{4})\b/g;
+            const dates = [...line.matchAll(datePattern)].map(m => m[1]);
+            
+            if (dates.length === 0) return null;
+            
+            // Find all amounts in the line
+            const amounts = [...line.matchAll(amountPattern)].map(m => m[1]);
+            
+            // Try to extract description
+            let description = line;
+            // Remove dates
+            dates.forEach(date => {
+                description = description.replace(date, '').trim();
+            });
+            // Remove amounts
+            amounts.forEach(amount => {
+                description = description.replace(amount, '').trim();
+            });
+            
+            // Clean up description
+            description = description.replace(/\s+/g, ' ').trim();
+            
+            // If description is too short, try to include next line
+            let consumedLines = 1;
+            if (description.length < 5 && nextLine) {
+                description += ' ' + nextLine.trim();
+                consumedLines = 2;
+                
+                // Check for more data in second next line
+                if (secondNextLine && secondNextLine.match(amountPattern)) {
+                    const moreAmounts = [...secondNextLine.matchAll(amountPattern)].map(m => m[1]);
+                    amounts.push(...moreAmounts);
+                    consumedLines = 3;
+                }
+            }
+            
+            // Determine transaction type
+            let type = 'Unknown';
+            const descLower = description.toLowerCase();
+            if (descLower.includes('uber') || descLower.includes('trip')) {
+                type = 'Uber';
+            } else if (descLower.includes('cash app')) {
+                type = 'Cash App';
+            } else if (descLower.includes('transfer')) {
+                type = 'Transfer';
+            } else if (descLower.includes('deposit')) {
+                type = 'Deposit';
+            } else if (descLower.includes('purchase') || descLower.includes('walmart') || 
+                      descLower.includes('google') || descLower.includes('coinmach')) {
+                type = 'Purchase';
+            } else if (descLower.includes('round up')) {
+                type = 'Round Up';
+            }
+            
+            const transaction = {
+                DATE: dates[0],
+                DESCRIPTION: description.substring(0, 100), // Limit description length
+                TYPE: type,
+                AMOUNT: amounts[0] || '',
+                NET_AMOUNT: amounts[1] || amounts[0] || '',
+                SETTLEMENT_DATE: dates[1] || dates[0],
+                consumedLines: consumedLines
+            };
+            
+            return transaction;
+        }
+        
+        function filterAndCleanTransactions(transactions) {
+            // Remove transactions without amounts
+            const withAmounts = transactions.filter(t => t.AMOUNT);
+            
+            // Group by date+amount to remove duplicates
+            const seen = new Set();
+            const unique = [];
+            
+            for (const t of withAmounts) {
+                const key = `${t.DATE}|${t.AMOUNT}|${t.DESCRIPTION.substring(0, 20)}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    // Remove the consumedLines property
+                    delete t.consumedLines;
+                    unique.push(t);
+                }
+            }
+            
+            return unique;
+        }
+        
+        function generateCSV(transactions) {
+            const headers = ['DATE', 'DESCRIPTION', 'TYPE', 'AMOUNT', 'NET AMOUNT', 'SETTLEMENT DATE'];
+            
+            const rows = transactions.map(t => [
+                t.DATE,
+                `"${t.DESCRIPTION.replace(/"/g, '""')}"`,
+                t.TYPE,
+                t.AMOUNT,
+                t.NET_AMOUNT,
+                t.SETTLEMENT_DATE
+            ]);
+            
+            return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        }
+        
+        function updateStats(processedFiles, transactions, csv) {
+            statFiles.textContent = processedFiles;
+            statTransactions.textContent = transactions.length.toLocaleString();
+            
+            // Find date range
+            if (transactions.length > 0) {
+                const dates = transactions.map(t => new Date(t.DATE)).filter(d => !isNaN(d));
+                if (dates.length > 0) {
+                    const minDate = new Date(Math.min(...dates)).toLocaleDateString();
+                    const maxDate = new Date(Math.max(...dates)).toLocaleDateString();
+                    statDates.textContent = `${minDate} - ${maxDate}`;
+                }
+            }
+            
+            const csvSize = new Blob([csv]).size;
+            statSize.textContent = (csvSize / 1024).toFixed(1) + ' KB';
+        }
+        
+        function showSample(transactions) {
+            sampleBody.innerHTML = '';
+            const sample = transactions.slice(0, 100);
+            
+            sample.forEach((t, i) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${t.DATE}</td>
+                    <td title="${t.DESCRIPTION}">${t.DESCRIPTION.substring(0, 40)}${t.DESCRIPTION.length > 40 ? '...' : ''}</td>
+                    <td>${t.TYPE}</td>
+                    <td>${t.AMOUNT}</td>
+                    <td>${t.NET_AMOUNT}</td>
+                    <td>${t.SETTLEMENT_DATE}</td>
+                `;
+                sampleBody.appendChild(row);
+            });
+        }
+        
+        function showError(message) {
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+        }
+        
+        function hideError() {
+            errorBox.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
