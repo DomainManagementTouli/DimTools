@@ -390,8 +390,17 @@
         // Add styles to head
         document.head.insertAdjacentHTML('beforeend', menuStyles);
 
-        // Add navigation to body (at the beginning)
-        document.body.insertAdjacentHTML('afterbegin', navigationHTML);
+        // Look for a container or create one
+        const menuContainer = document.getElementById('nav-menu-container');
+        
+        if (menuContainer) {
+            // Insert into the specified container
+            menuContainer.innerHTML = navigationHTML;
+        } else {
+            // Fallback: insert at the beginning of body
+            document.body.insertAdjacentHTML('afterbegin', navigationHTML);
+            console.warn('No #nav-menu-container found. Menu inserted at body beginning.');
+        }
 
         // Initialize clicky menus
         const menus = document.querySelectorAll('.clicky-menu');
