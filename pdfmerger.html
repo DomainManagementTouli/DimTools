@@ -470,24 +470,50 @@
                 selectedFilesCount.textContent = 'No files selected';
                 return;
             }
-            
-            let fileListHTML = '';
+
+            // Clear existing content
+            fileList.innerHTML = '';
+
+            // Create file items using safe DOM manipulation
             files.forEach((file, index) => {
                 const size = formatFileSize(file.size);
-                fileListHTML += `
-                    <div class="file-item">
-                        <div>
-                            <div class="file-name">${file.name}</div>
-                            <div class="file-size">${size}</div>
-                        </div>
-                        <button class="btn-small" onclick="removeFile(${index})" style="background: none; border: none; color: #dc3545; cursor: pointer; padding: 0.25rem 0.5rem;">
-                            Remove
-                        </button>
-                    </div>
-                `;
+
+                // Create file item container
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+
+                // Create file info container
+                const fileInfo = document.createElement('div');
+
+                // Create and set file name (using textContent to prevent XSS)
+                const fileName = document.createElement('div');
+                fileName.className = 'file-name';
+                fileName.textContent = file.name; // Safe from XSS
+
+                // Create and set file size
+                const fileSize = document.createElement('div');
+                fileSize.className = 'file-size';
+                fileSize.textContent = size;
+
+                // Assemble file info
+                fileInfo.appendChild(fileName);
+                fileInfo.appendChild(fileSize);
+
+                // Create remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn-small';
+                removeBtn.textContent = 'Remove';
+                removeBtn.style.cssText = 'background: none; border: none; color: #dc3545; cursor: pointer; padding: 0.25rem 0.5rem;';
+                removeBtn.onclick = () => removeFile(index);
+
+                // Assemble file item
+                fileItem.appendChild(fileInfo);
+                fileItem.appendChild(removeBtn);
+
+                // Add to file list
+                fileList.appendChild(fileItem);
             });
-            
-            fileList.innerHTML = fileListHTML;
+
             selectedFilesCount.textContent = `${files.length} file${files.length !== 1 ? 's' : ''} selected`;
         }
         
