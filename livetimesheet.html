@@ -18,6 +18,115 @@
             padding: 20px;
         }
 
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        .login-container h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+            text-align: center;
+        }
+
+        .login-container p {
+            color: #6c757d;
+            margin-bottom: 30px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .login-form label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .login-form input {
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-form button {
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .login-form button:hover {
+            transform: translateY(-1px);
+        }
+
+        .login-form button:active {
+            transform: translateY(0);
+        }
+
+        .login-form button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -25,16 +134,517 @@
             border-radius: 12px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            display: none;
+        }
+
+        .container.show {
+            display: block;
         }
 
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .header h1 {
+        .header-content h1 {
             font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header-content p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-email {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.disconnected {
+            background: #dc3545;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .table-container {
+            overflow-x: auto;
+            padding: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            color: #212529;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .unit-green {
+            border-left: 4px solid #28a745;
+        }
+
+        .unit-yellow {
+            border-left: 4px solid #ffc107;
+        }
+
+        .editable {
+            background: #f8f9fa;
+            cursor: text;
+            min-height: 20px;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        .editable:hover {
+            background: #e9ecef;
+        }
+
+        .editable:hover::after {
+            content: 'Click to edit';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .editable.editing {
+            background: white;
+            padding: 0;
+        }
+
+        .editable input {
+            width: 100%;
+            border: 2px solid #667eea;
+            padding: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .header-content h1 {
+                font-size: 22px;
+            }
+
+            .table-container {
+                padding: 15px;
+            }
+
+            th, td {
+                padding: 8px;
+                font-size: 12px;
+            }
+
+            .editable:hover::after {
+                display: none;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginContainer">
+        <h1>Dinner Tray Status Hub</h1>
+        <p>Sign in to access status updates</p>
+        <div class="message" id="loginMessage"></div>
+        <form class="login-form" id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+            <button type="submit" id="loginBtn">Sign In</button>
+        </form>
+    </div>
+
+    <!-- Main Application -->
+    <div class="container" id="mainContainer">
+        <div class="header">
+            <div class="header-content">
+                <h1>Dinner Tray Status Hub</h1>
+                <p>Collaborative editing enabled - Changes sync automatically across all devices</p>
+            </div>
+            <div class="header-actions">
+                <span class="user-email" id="userEmail"></span>
+                <button class="logout-btn" id="logoutBtn">Sign Out</button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connecting to Firebase...</span>
+            </div>
+            <div id="lastUpdate">Last update: Never</div>
+        </div>
+
+        <div class="table-container">
+            <table id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th>Dinner Delivery Window</th>
+                        <th>Unit/Department/Floor</th>
+                        <th>TICKETS-Printed?</th>
+                        <th>GRILL TALLY-Printed?</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="4" class="loading">Loading schedule data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKqak1hp_64YjINjBf3zNaq0kJbu1AhWM",
+            authDomain: "meal-schedule-5b1f4.firebaseapp.com",
+            databaseURL: "https://meal-schedule-5b1f4-default-rtdb.firebaseio.com",
+            projectId: "meal-schedule-5b1f4",
+            storageBucket: "meal-schedule-5b1f4.firebasestorage.app",
+            messagingSenderId: "796389771102",
+            appId: "1:796389771102:web:dd5300418c2a4fbb84f1cf",
+            measurementId: "G-XL8ZJ1RYLH"
+        };
+
+        // Initial data
+        const initialData = [
+            ["04:20 PM - 04:50 PM", "8South (Green)", "", ""],
+            ["04:10 PM - 04:40 PM", "8 Central (Yellow)", "", ""],
+            ["04:10 PM - 04:40 PM", "5 Central (Yellow)", "", ""],
+            ["04:20 PM - 04:50 PM", "5WN ICU (Green)", "", ""],
+            ["04:25 PM - 04:55 PM", "10 Central (Green)", "", ""],
+            ["04:35 PM - 05:05 PM", "5 West (Green)", "", ""],
+            ["04:40 PM - 05:10 PM", "9 South  (Yellow)", "", ""],
+            ["04:50 PM - 05:20 PM", "6 Central  (Yellow)", "", ""],
+            ["04:45 PM - 05:15 PM", "4 Central (Green)", "", ""],
+            ["04:50 PM - 05:20 PM", "7F ICU (Green)", "", ""],
+            ["04:50 PM - 05:20 PM", "7E ICU (Green)", "", ""],
+            ["04:55 PM - 05:25 PM", "7N ICU (Green)", "", ""],
+            ["05:15 PM - 05:45 PM", "10 WEST OBS (Yellow)", "", ""],
+            ["05:20 PM - 05:50 PM", "PEDIATRICS (Yellow)", "", ""],
+            ["05:45 PM - 06:15 PM", "2FMB (Green)", "", ""],
+            ["05:25 PM - 05:55 PM", "LABOR & DELIVERY (Yellow)", "", ""],
+            ["05:30 PM - 06:00 PM", "ANTEPARTUM & NICU (Yellow)", "", ""],
+            ["05:30 PM - 06:00 PM", "9 WEST (Green)", "", ""],
+            ["05:55 PM - 06:25 PM", "7S ICU (Yellow)", "", ""],
+            ["05:55 PM - 06:25 PM", "7SOUTH NEUROSTROKE (Yellow)", "", ""],
+            ["05:40 PM - 06:10 PM", "9 Central (Green)", "", ""],
+            ["[No Value]", "Emergency Department (Green)", "", ""],
+            ["06:15 PM - 06:45 PM", "8 WEST ONCOLOGY (Yellow)", "", ""]
+        ];
+
+        let db = null;
+        let dataRef = null;
+        let auth = null;
+        let currentUser = null;
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.database();
+
+        // Auth state observer
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                showMainApp(user);
+                initializeDatabase();
+            } else {
+                currentUser = null;
+                showLogin();
+            }
+        });
+
+        // Login form handling
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const loginBtn = document.getElementById('loginBtn');
+            const message = document.getElementById('loginMessage');
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in...';
+            message.classList.remove('show', 'error', 'success');
+            
+            try {
+                await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value);
+            } catch (error) {
+                let errorMessage = 'Failed to sign in. Please check your credentials.';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'No account found with this email address.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Incorrect password. Please try again.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Please enter a valid email address.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many failed attempts. Please try again later.';
+                }
+                
+                message.textContent = errorMessage;
+                message.classList.add('show', 'error');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
+                passwordInput.value = '';
+            }
+        });
+
+        // Logout handling
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        });
+
+        function showLogin() {
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('mainContainer').classList.remove('show');
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginBtn').disabled = false;
+            document.getElementById('loginBtn').textContent = 'Sign In';
+        }
+
+        function showMainApp(user) {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('mainContainer').classList.add('show');
+            document.getElementById('userEmail').textContent = user.email;
+        }
+
+        function initializeDatabase() {
+            try {
+                dataRef = db.ref('dinnerScheduleData');
+                updateStatus('Connected', true);
+
+                dataRef.once('value').then((snapshot) => {
+                    if (!snapshot.exists()) {
+                        dataRef.set(initialData);
+                    }
+                    renderTable(snapshot.val() || initialData);
+                });
+
+                dataRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        renderTable(data);
+                        updateLastUpdateTime();
+                    }
+                });
+            } catch (error) {
+                console.error('Database initialization error:', error);
+                updateStatus('Connection Error - Using Local Mode', false);
+                renderTable(initialData);
+            }
+        }
+
+        function updateStatus(text, connected) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = text;
+            if (connected) {
+                statusDot.classList.remove('disconnected');
+            } else {
+                statusDot.classList.add('disconnected');
+            }
+        }
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            document.getElementById('lastUpdate').textContent = `Last update: ${timeStr}`;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            data.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                
+                const unitName = row[1]?.toLowerCase() || '';
+                if (unitName.includes('green')) {
+                    tr.classList.add('unit-green');
+                } else if (unitName.includes('yellow')) {
+                    tr.classList.add('unit-yellow');
+                }
+
+                row.forEach((cell, cellIndex) => {
+                    const td = document.createElement('td');
+                    
+                    if ((cellIndex === 2 || cellIndex === 3)) {
+                        td.classList.add('editable');
+                        td.textContent = cell || '';
+                        td.onclick = () => editCell(td, rowIndex, cellIndex);
+                    } else {
+                        td.textContent = cell;
+                    }
+
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function editCell(td, rowIndex, cellIndex) {
+            if (!db || !currentUser) {
+                alert('You must be signed in to edit the schedule.');
+                return;
+            }
+
+            if (td.classList.contains('editing')) {
+                return;
+            }
+
+            td.classList.add('editing');
+            const currentValue = td.textContent;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue;
+            td.textContent = '';
+            td.appendChild(input);
+            
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+
+            const saveValue = () => {
+                const newValue = input.value;
+                td.classList.remove('editing');
+                
+                dataRef.once('value').then((snapshot) => {
+                    const data = snapshot.val() || initialData;
+                    data[rowIndex][cellIndex] = newValue;
+                    dataRef.set(data);
+                });
+            };
+
+            input.onblur = saveValue;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    saveValue();
+                }
+                if (e.key === 'Escape') {
+                    td.classList.remove('editing');
+                    dataRef.once('value').then((snapshot) => {
+                        renderTable(snapshot.val() || initialData);
+                    });
+                }
+            };
+        }
+    </script>
+</body>
+</html>            font-size: 28px;
             margin-bottom: 8px;
         }
 
