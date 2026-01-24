@@ -14,7 +14,17 @@ const state = {
     isDrawing: false,
     canvas: null,
     ctx: null,
-    canvasOffset: { x: 0, y: 0 }
+    canvasOffset: { x: 0, y: 0 },
+    fieldCounter: 0  // Counter for unique field names
+};
+
+// PDF-safe ASCII symbols (compatible with standard PDF fonts)
+const PDF_SAFE_SYMBOLS = {
+    checkmark: 'X',      // Use X as checkmark (universally supported)
+    cross: 'X',          // X for cross
+    arrow: '->',         // ASCII arrow
+    star: '*',           // Asterisk for star
+    exclamation: '!'     // Standard exclamation
 };
 
 // Initialize signature canvas
@@ -181,8 +191,9 @@ document.addEventListener('click', (e) => {
 
 // Add form field
 function addField(type, x, y) {
+    state.fieldCounter++;  // Increment counter for unique names
     const field = {
-        id: Date.now(),
+        id: Date.now() + state.fieldCounter,  // Ensure unique ID
         type: type,
         x: x,
         y: y,
@@ -195,7 +206,7 @@ function addField(type, x, y) {
         bgColor: '#ffffff',
         borderColor: '#000000',
         borderWidth: 1,
-        name: `field_${Date.now()}`,
+        name: `field_${Date.now()}_${state.fieldCounter}`,  // Unique name with counter
         value: type === 'checkmark' ? '✓' :
                type === 'cross' ? '✗' :
                type === 'arrow' ? '→' :
@@ -501,8 +512,14 @@ async function downloadPDF() {
             const { width, height } = page.getSize();
 
             // Convert coordinates (PDF coordinates start from bottom-left)
-            const pdfY = height - field.y - field.height;
-            const pdfX = field.x;
+            // Account for canvas scale factor
+            const scaledX = field.x / state.scale;
+            const scaledY = field.y / state.scale;
+            const scaledWidth = field.width / state.scale;
+            const scaledHeight = field.height / state.scale;
+
+            const pdfX = scaledX;
+            const pdfY = height - scaledY - scaledHeight;
 
             // Parse colors
             const rgb = hexToRgb(field.textColor);
@@ -514,21 +531,21 @@ async function downloadPDF() {
                 textField.addToPage(page, {
                     x: pdfX,
                     y: pdfY,
-                    width: field.width,
-                    height: field.height,
+                    width: scaledWidth,
+                    height: scaledHeight,
                     textColor: PDFLib.rgb(rgb.r / 255, rgb.g / 255, rgb.b / 255),
                     backgroundColor: PDFLib.rgb(bgRgb.r / 255, bgRgb.g / 255, bgRgb.b / 255),
                     borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
                     borderWidth: field.borderWidth,
                 });
-                textField.setFontSize(field.fontSize);
+                textField.setFontSize(field.fontSize / state.scale);
             } else if (field.type === 'checkbox') {
                 const checkBox = form.createCheckBox(field.name);
                 checkBox.addToPage(page, {
                     x: pdfX,
                     y: pdfY,
-                    width: field.width,
-                    height: field.height,
+                    width: scaledWidth,
+                    height: scaledHeight,
                     borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
                     borderWidth: field.borderWidth,
                 });
@@ -537,8 +554,8 @@ async function downloadPDF() {
                 page.drawRectangle({
                     x: pdfX,
                     y: pdfY,
-                    width: field.width,
-                    height: field.height,
+                    width: scaledWidth,
+                    height: scaledHeight,
                     borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
                     borderWidth: field.borderWidth,
                     color: PDFLib.rgb(bgRgb.r / 255, bgRgb.g / 255, bgRgb.b / 255),
@@ -549,15 +566,16 @@ async function downloadPDF() {
                 sigField.addToPage(page, {
                     x: pdfX,
                     y: pdfY,
-                    width: field.width,
-                    height: field.height,
+                    width: scaledWidth,
+                    height: scaledHeight,
                 });
             } else if (['checkmark', 'cross', 'arrow', 'star', 'exclamation'].includes(field.type)) {
-                // Draw indicator symbols
-                page.drawText(field.value, {
+                // Draw indicator symbols using PDF-safe ASCII characters
+                const pdfSafeSymbol = PDF_SAFE_SYMBOLS[field.type] || field.value;
+                page.drawText(pdfSafeSymbol, {
                     x: pdfX,
                     y: pdfY + 5,
-                    size: field.fontSize * 1.5,
+                    size: (field.fontSize * 1.5) / state.scale,
                     color: PDFLib.rgb(rgb.r / 255, rgb.g / 255, rgb.b / 255),
                 });
             }
