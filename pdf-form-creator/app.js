@@ -500,14 +500,30 @@ async function downloadPDF() {
         return;
     }
 
+    if (state.fields.length === 0) {
+        alert('Please add at least one field before downloading');
+        return;
+    }
+
     try {
-        // Load the PDF with pdf-lib
-        const pdfDoc = await PDFLib.PDFDocument.load(state.pdfBytes);
+        // Load the PDF with pdf-lib (ignore encryption for broader compatibility)
+        const pdfDoc = await PDFLib.PDFDocument.load(state.pdfBytes, {
+            ignoreEncryption: true
+        });
         const form = pdfDoc.getForm();
         const pages = pdfDoc.getPages();
 
+        // Embed a standard font for text drawing (required for drawText)
+        const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+
         // Process each field
         for (const field of state.fields) {
+            // Validate page index
+            if (field.page < 1 || field.page > pages.length) {
+                console.warn(`Skipping field with invalid page: ${field.page}`);
+                continue;
+            }
+
             const page = pages[field.page - 1];
             const { width, height } = page.getSize();
 
@@ -518,13 +534,13 @@ async function downloadPDF() {
             const scaledWidth = field.width / state.scale;
             const scaledHeight = field.height / state.scale;
 
-            const pdfX = scaledX;
-            const pdfY = height - scaledY - scaledHeight;
+            const pdfX = Math.max(0, scaledX);
+            const pdfY = Math.max(0, height - scaledY - scaledHeight);
 
-            // Parse colors
-            const rgb = hexToRgb(field.textColor);
-            const bgRgb = hexToRgb(field.bgColor);
-            const borderRgb = hexToRgb(field.borderColor);
+            // Parse colors with fallback
+            const rgb = hexToRgb(field.textColor) || { r: 0, g: 0, b: 0 };
+            const bgRgb = hexToRgb(field.bgColor) || { r: 255, g: 255, b: 255 };
+            const borderRgb = hexToRgb(field.borderColor) || { r: 0, g: 0, b: 0 };
 
             if (field.type === 'text') {
                 const textField = form.createTextField(field.name);
@@ -570,12 +586,13 @@ async function downloadPDF() {
                     height: scaledHeight,
                 });
             } else if (['checkmark', 'cross', 'arrow', 'star', 'exclamation'].includes(field.type)) {
-                // Draw indicator symbols using PDF-safe ASCII characters
-                const pdfSafeSymbol = PDF_SAFE_SYMBOLS[field.type] || field.value;
+                // Draw indicator symbols using PDF-safe ASCII characters with embedded font
+                const pdfSafeSymbol = PDF_SAFE_SYMBOLS[field.type] || 'X';
                 page.drawText(pdfSafeSymbol, {
                     x: pdfX,
                     y: pdfY + 5,
                     size: (field.fontSize * 1.5) / state.scale,
+                    font: helveticaFont,
                     color: PDFLib.rgb(rgb.r / 255, rgb.g / 255, rgb.b / 255),
                 });
             }
