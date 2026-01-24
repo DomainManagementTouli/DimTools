@@ -534,14 +534,20 @@ async function downloadPDF() {
 
         const pages = pdfDoc.getPages();
 
-        // Check for XFA forms (not supported by pdf-lib)
-        const acroForm = pdfDoc.catalog.lookup(PDFLib.PDFName.of('AcroForm'));
-        if (acroForm) {
-            const xfa = acroForm.lookup(PDFLib.PDFName.of('XFA'));
-            if (xfa) {
-                alert('This PDF contains XFA forms which are not supported. Try a different PDF.');
-                return;
+        // Check for XFA forms (not supported by pdf-lib) - wrapped in try-catch
+        // as the internal API may vary between pdf-lib versions
+        try {
+            const acroForm = pdfDoc.catalog.get(PDFLib.PDFName.of('AcroForm'));
+            if (acroForm && acroForm.get) {
+                const xfa = acroForm.get(PDFLib.PDFName.of('XFA'));
+                if (xfa) {
+                    alert('This PDF contains XFA forms which are not supported. Try a different PDF.');
+                    return;
+                }
             }
+        } catch (xfaCheckError) {
+            // XFA check failed - continue anyway, will fail later if truly incompatible
+            console.warn('XFA check skipped:', xfaCheckError.message);
         }
 
         // Get form - wrap in try-catch as some PDFs have issues with forms
@@ -550,8 +556,8 @@ async function downloadPDF() {
             form = pdfDoc.getForm();
         } catch (formError) {
             console.error('Error getting form:', formError);
-            // Create a new form if getting existing form fails
-            form = pdfDoc.getForm();
+            alert('Error accessing PDF form structure. Try a different PDF.');
+            return;
         }
 
         // Get existing field names to avoid conflicts
