@@ -505,16 +505,73 @@ async function downloadPDF() {
         return;
     }
 
+    // Check if pdf-lib is loaded
+    if (typeof PDFLib === 'undefined') {
+        alert('PDF library not loaded. Please refresh the page and try again.');
+        console.error('PDFLib is undefined - CDN may have failed to load');
+        return;
+    }
+
     try {
-        // Load the PDF with pdf-lib (ignore encryption for broader compatibility)
-        const pdfDoc = await PDFLib.PDFDocument.load(state.pdfBytes, {
-            ignoreEncryption: true
-        });
-        const form = pdfDoc.getForm();
+        // Load the PDF with pdf-lib with multiple fallback options
+        let pdfDoc;
+        try {
+            pdfDoc = await PDFLib.PDFDocument.load(state.pdfBytes, {
+                ignoreEncryption: true,
+                updateMetadata: false
+            });
+        } catch (loadError) {
+            console.error('Failed to load PDF with default options:', loadError);
+            // Try without any options as fallback
+            try {
+                pdfDoc = await PDFLib.PDFDocument.load(state.pdfBytes);
+            } catch (fallbackError) {
+                console.error('Failed to load PDF with fallback:', fallbackError);
+                alert('This PDF format is not supported for editing. Try a different PDF.');
+                return;
+            }
+        }
+
         const pages = pdfDoc.getPages();
 
-        // Embed a standard font for text drawing (required for drawText)
-        const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+        // Check for XFA forms (not supported by pdf-lib)
+        const acroForm = pdfDoc.catalog.lookup(PDFLib.PDFName.of('AcroForm'));
+        if (acroForm) {
+            const xfa = acroForm.lookup(PDFLib.PDFName.of('XFA'));
+            if (xfa) {
+                alert('This PDF contains XFA forms which are not supported. Try a different PDF.');
+                return;
+            }
+        }
+
+        // Get form - wrap in try-catch as some PDFs have issues with forms
+        let form;
+        try {
+            form = pdfDoc.getForm();
+        } catch (formError) {
+            console.error('Error getting form:', formError);
+            // Create a new form if getting existing form fails
+            form = pdfDoc.getForm();
+        }
+
+        // Get existing field names to avoid conflicts
+        const existingFieldNames = new Set();
+        try {
+            const existingFields = form.getFields();
+            existingFields.forEach(f => existingFieldNames.add(f.getName()));
+        } catch (e) {
+            // Ignore - PDF might not have existing fields
+        }
+
+        // Embed font for text drawing
+        let helveticaFont;
+        try {
+            helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+        } catch (fontError) {
+            console.error('Error embedding font:', fontError);
+            alert('Error preparing PDF. Please try a different PDF.');
+            return;
+        }
 
         // Process each field
         for (const field of state.fields) {
@@ -534,72 +591,102 @@ async function downloadPDF() {
             const scaledWidth = field.width / state.scale;
             const scaledHeight = field.height / state.scale;
 
-            const pdfX = Math.max(0, scaledX);
-            const pdfY = Math.max(0, height - scaledY - scaledHeight);
+            const pdfX = Math.max(0, Math.min(scaledX, width - scaledWidth));
+            const pdfY = Math.max(0, Math.min(height - scaledY - scaledHeight, height - scaledHeight));
 
             // Parse colors with fallback
             const rgb = hexToRgb(field.textColor) || { r: 0, g: 0, b: 0 };
             const bgRgb = hexToRgb(field.bgColor) || { r: 255, g: 255, b: 255 };
             const borderRgb = hexToRgb(field.borderColor) || { r: 0, g: 0, b: 0 };
 
-            if (field.type === 'text') {
-                const textField = form.createTextField(field.name);
-                textField.addToPage(page, {
-                    x: pdfX,
-                    y: pdfY,
-                    width: scaledWidth,
-                    height: scaledHeight,
-                    textColor: PDFLib.rgb(rgb.r / 255, rgb.g / 255, rgb.b / 255),
-                    backgroundColor: PDFLib.rgb(bgRgb.r / 255, bgRgb.g / 255, bgRgb.b / 255),
-                    borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
-                    borderWidth: field.borderWidth,
-                });
-                textField.setFontSize(field.fontSize / state.scale);
-            } else if (field.type === 'checkbox') {
-                const checkBox = form.createCheckBox(field.name);
-                checkBox.addToPage(page, {
-                    x: pdfX,
-                    y: pdfY,
-                    width: scaledWidth,
-                    height: scaledHeight,
-                    borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
-                    borderWidth: field.borderWidth,
-                });
-            } else if (field.type === 'signature') {
-                // Draw signature area
-                page.drawRectangle({
-                    x: pdfX,
-                    y: pdfY,
-                    width: scaledWidth,
-                    height: scaledHeight,
-                    borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
-                    borderWidth: field.borderWidth,
-                    color: PDFLib.rgb(bgRgb.r / 255, bgRgb.g / 255, bgRgb.b / 255),
-                });
+            // Generate unique field name if conflict exists
+            let fieldName = field.name;
+            let nameCounter = 1;
+            while (existingFieldNames.has(fieldName)) {
+                fieldName = `${field.name}_${nameCounter}`;
+                nameCounter++;
+            }
+            existingFieldNames.add(fieldName);
 
-                // Add a text field for signature
-                const sigField = form.createTextField(field.name);
-                sigField.addToPage(page, {
-                    x: pdfX,
-                    y: pdfY,
-                    width: scaledWidth,
-                    height: scaledHeight,
-                });
-            } else if (['checkmark', 'cross', 'arrow', 'star', 'exclamation'].includes(field.type)) {
-                // Draw indicator symbols using PDF-safe ASCII characters with embedded font
-                const pdfSafeSymbol = PDF_SAFE_SYMBOLS[field.type] || 'X';
-                page.drawText(pdfSafeSymbol, {
-                    x: pdfX,
-                    y: pdfY + 5,
-                    size: (field.fontSize * 1.5) / state.scale,
-                    font: helveticaFont,
-                    color: PDFLib.rgb(rgb.r / 255, rgb.g / 255, rgb.b / 255),
-                });
+            try {
+                if (field.type === 'text') {
+                    const textField = form.createTextField(fieldName);
+                    textField.addToPage(page, {
+                        x: pdfX,
+                        y: pdfY,
+                        width: scaledWidth,
+                        height: scaledHeight,
+                        textColor: PDFLib.rgb(rgb.r / 255, rgb.g / 255, rgb.b / 255),
+                        backgroundColor: PDFLib.rgb(bgRgb.r / 255, bgRgb.g / 255, bgRgb.b / 255),
+                        borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
+                        borderWidth: field.borderWidth,
+                    });
+                    textField.setFontSize(field.fontSize / state.scale);
+                } else if (field.type === 'checkbox') {
+                    const checkBox = form.createCheckBox(fieldName);
+                    checkBox.addToPage(page, {
+                        x: pdfX,
+                        y: pdfY,
+                        width: scaledWidth,
+                        height: scaledHeight,
+                        borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
+                        borderWidth: field.borderWidth,
+                    });
+                } else if (field.type === 'signature') {
+                    // Draw signature area
+                    page.drawRectangle({
+                        x: pdfX,
+                        y: pdfY,
+                        width: scaledWidth,
+                        height: scaledHeight,
+                        borderColor: PDFLib.rgb(borderRgb.r / 255, borderRgb.g / 255, borderRgb.b / 255),
+                        borderWidth: field.borderWidth,
+                        color: PDFLib.rgb(bgRgb.r / 255, bgRgb.g / 255, bgRgb.b / 255),
+                    });
+
+                    // Add a text field for signature
+                    const sigField = form.createTextField(fieldName);
+                    sigField.addToPage(page, {
+                        x: pdfX,
+                        y: pdfY,
+                        width: scaledWidth,
+                        height: scaledHeight,
+                    });
+                } else if (['checkmark', 'cross', 'arrow', 'star', 'exclamation'].includes(field.type)) {
+                    // Draw indicator symbols using PDF-safe ASCII characters with embedded font
+                    const pdfSafeSymbol = PDF_SAFE_SYMBOLS[field.type] || 'X';
+                    page.drawText(pdfSafeSymbol, {
+                        x: pdfX,
+                        y: pdfY + 5,
+                        size: (field.fontSize * 1.5) / state.scale,
+                        font: helveticaFont,
+                        color: PDFLib.rgb(rgb.r / 255, rgb.g / 255, rgb.b / 255),
+                    });
+                }
+            } catch (fieldError) {
+                console.error(`Error adding field ${fieldName}:`, fieldError);
+                // Continue with other fields even if one fails
             }
         }
 
-        // Save the PDF
-        const pdfBytes = await pdfDoc.save();
+        // Save the PDF with fallback options
+        let pdfBytes;
+        try {
+            pdfBytes = await pdfDoc.save();
+        } catch (saveError) {
+            console.error('Error saving with default options:', saveError);
+            // Try with different save options
+            try {
+                pdfBytes = await pdfDoc.save({
+                    useObjectStreams: false,
+                    updateFieldAppearances: false
+                });
+            } catch (fallbackSaveError) {
+                console.error('Error saving with fallback options:', fallbackSaveError);
+                alert('Error saving PDF. The PDF structure may be incompatible.');
+                return;
+            }
+        }
 
         // Download
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -607,13 +694,16 @@ async function downloadPDF() {
         const a = document.createElement('a');
         a.href = url;
         a.download = 'fillable-form.pdf';
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
         alert('PDF downloaded successfully!');
     } catch (error) {
         console.error('Error creating PDF:', error);
-        alert('Error creating PDF. Please try again.');
+        console.error('Error details:', error.message, error.stack);
+        alert('Error creating PDF: ' + (error.message || 'Unknown error. Check console for details.'));
     }
 }
 
