@@ -3,39 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DimTools - Video Audio Overlay Editor</title>
+    <title>DimTools - Video Editor</title>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
     <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #191919;
+            --bg-panel: #232323;
+            --bg-hover: #2d2d2d;
+            --bg-active: #3d3d3d;
+            --border: #333;
+            --text: #fff;
+            --text-dim: #888;
+            --text-muted: #555;
+            --accent: #00d4aa;
+            --accent-hover: #00e4ba;
+            --video-color: #ff5757;
+            --audio-color: #57b3ff;
+            --warning: #ffaa00;
         }
 
         html, body {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #0d0d0d;
-            color: #fff;
+            background: var(--bg-dark);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
         }
 
-        /* Main App Layout */
-        .app {
+        /* App Container */
+        #app {
             display: flex;
             flex-direction: column;
             height: 100vh;
             width: 100vw;
-            overflow: hidden;
         }
 
-        /* Top Header Bar */
+        /* Header */
         .header {
             height: 48px;
-            background: #1a1a1a;
-            border-bottom: 1px solid #333;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -43,27 +55,62 @@
             flex-shrink: 0;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
         .logo {
             display: flex;
             align-items: center;
             gap: 8px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 15px;
         }
 
         .logo-icon {
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            border-radius: 4px;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent), #00a088);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
         }
 
-        .header-actions {
+        .header-center {
             display: flex;
+            gap: 4px;
+        }
+
+        .tool-btn {
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+
+        .tool-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+        }
+
+        .tool-btn.active {
+            background: var(--bg-active);
+            color: var(--accent);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
             gap: 8px;
         }
 
@@ -74,146 +121,154 @@
             font-weight: 500;
             cursor: pointer;
             border: none;
-            transition: all 0.2s;
+            transition: all 0.15s;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-dim);
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg-hover);
+            color: var(--text);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white;
+            background: var(--accent);
+            color: #000;
+            font-weight: 600;
         }
 
         .btn-primary:hover {
-            opacity: 0.9;
+            background: var(--accent-hover);
         }
 
         .btn-primary:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: #2a2a2a;
-            color: #ccc;
-            border: 1px solid #444;
-        }
-
-        .btn-secondary:hover {
-            background: #333;
-            color: #fff;
         }
 
         /* Main Workspace */
         .workspace {
             flex: 1;
             display: flex;
-            overflow: hidden;
             min-height: 0;
         }
 
-        /* Left Sidebar - Media Library */
-        .sidebar-left {
-            width: 240px;
-            background: #1a1a1a;
-            border-right: 1px solid #333;
+        /* Left Panel */
+        .panel-left {
+            width: 280px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
         }
 
-        .sidebar-header {
-            padding: 12px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #333;
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
         }
 
-        .upload-buttons {
+        .panel-tab {
+            flex: 1;
             padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .upload-btn {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px;
-            background: #252525;
-            border: 1px dashed #444;
-            border-radius: 6px;
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
             cursor: pointer;
-            transition: all 0.2s;
-            color: #aaa;
-            font-size: 13px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
         }
 
-        .upload-btn:hover {
-            background: #2a2a2a;
-            border-color: #ff6b6b;
-            color: #fff;
+        .panel-tab:hover {
+            color: var(--text);
         }
 
-        .upload-btn-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
+        .panel-tab.active {
+            color: var(--text);
+            border-bottom: 2px solid var(--accent);
+            margin-bottom: -1px;
         }
 
-        .upload-btn-icon.video {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-        }
-
-        .upload-btn-icon.audio {
-            background: rgba(78, 205, 196, 0.2);
-            color: #4ecdc4;
-        }
-
-        .media-list {
+        .panel-content {
             flex: 1;
             overflow-y: auto;
-            padding: 8px;
+            padding: 12px;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: rgba(0, 212, 170, 0.05);
+        }
+
+        .upload-zone-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .upload-zone p {
+            font-size: 11px;
+            color: var(--text-dim);
         }
 
         .media-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px 10px;
-            background: #252525;
-            border-radius: 4px;
-            margin-bottom: 6px;
+            padding: 10px;
+            background: var(--bg-dark);
+            border-radius: 6px;
+            margin-bottom: 8px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.15s;
         }
 
         .media-item:hover {
-            background: #2f2f2f;
+            background: var(--bg-hover);
         }
 
-        .media-icon {
-            width: 36px;
-            height: 28px;
-            border-radius: 3px;
+        .media-thumb {
+            width: 64px;
+            height: 40px;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
         }
 
-        .media-icon.video { background: rgba(255, 107, 107, 0.3); color: #ff6b6b; }
-        .media-icon.audio { background: rgba(78, 205, 196, 0.3); color: #4ecdc4; }
+        .media-thumb video, .media-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-        .media-info {
+        .media-thumb-icon {
+            font-size: 20px;
+            color: var(--text-dim);
+        }
+
+        .media-details {
             flex: 1;
             min-width: 0;
         }
@@ -223,183 +278,158 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: #ddd;
+            margin-bottom: 2px;
         }
 
-        .media-duration {
+        .media-meta {
             font-size: 10px;
-            color: #666;
-            margin-top: 2px;
+            color: var(--text-dim);
         }
 
         .media-remove {
             opacity: 0;
             background: none;
             border: none;
-            color: #ff4757;
+            color: #ff5757;
             cursor: pointer;
+            padding: 4px 8px;
             font-size: 16px;
-            padding: 4px;
         }
 
         .media-item:hover .media-remove {
             opacity: 1;
         }
 
-        /* Center - Preview Area */
+        /* Preview Area */
         .preview-area {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: #0d0d0d;
+            background: var(--bg-dark);
             min-width: 0;
         }
 
-        .preview-wrapper {
+        .preview-container {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 16px;
+            background: #000;
+            position: relative;
             min-height: 0;
         }
 
-        .video-container {
-            position: relative;
+        .preview-video {
             max-width: 100%;
             max-height: 100%;
-            background: #000;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        #videoPreview {
             display: block;
-            max-width: 100%;
-            max-height: calc(100vh - 350px);
-            background: #000;
         }
 
         .preview-empty {
             text-align: center;
-            color: #555;
+            color: var(--text-muted);
         }
 
         .preview-empty-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-            opacity: 0.5;
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
         }
 
         .preview-empty h3 {
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 4px;
-            color: #666;
+            font-size: 18px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
         }
 
-        .preview-empty p {
-            font-size: 13px;
-        }
-
-        /* Playback Controls */
-        .playback-bar {
-            background: #1a1a1a;
+        /* Transport Controls */
+        .transport {
+            background: var(--bg-panel);
             padding: 12px 16px;
-            border-top: 1px solid #333;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
-        }
-
-        .transport-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            gap: 12px;
+            border-top: 1px solid var(--border);
         }
 
         .transport-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            background: #2a2a2a;
-            border: none;
-            color: #aaa;
-            cursor: pointer;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .transport-btn:hover {
-            background: #333;
-            color: #fff;
-        }
-
-        .play-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            border: none;
-            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text);
             cursor: pointer;
             font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s;
+            transition: all 0.15s;
         }
 
-        .play-btn:hover {
+        .transport-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-dim);
+        }
+
+        .transport-btn.play-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: #000;
+            font-size: 18px;
+        }
+
+        .transport-btn.play-btn:hover {
+            background: var(--accent-hover);
             transform: scale(1.05);
         }
 
         .time-display {
-            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-family: 'SF Mono', Monaco, monospace;
             font-size: 13px;
-            color: #888;
-            min-width: 140px;
+            color: var(--text);
+            min-width: 180px;
             text-align: center;
+            background: var(--bg-dark);
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
         }
 
         .time-current {
-            color: #fff;
+            color: var(--accent);
         }
 
-        /* Right Sidebar - Properties */
-        .sidebar-right {
-            width: 260px;
-            background: #1a1a1a;
-            border-left: 1px solid #333;
+        /* Right Panel */
+        .panel-right {
+            width: 280px;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
             overflow-y: auto;
         }
 
-        .property-section {
+        .properties-section {
             padding: 16px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border);
         }
 
-        .property-title {
-            font-size: 12px;
+        .properties-title {
+            font-size: 11px;
             font-weight: 600;
-            color: #888;
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 6px;
-        }
-
-        .property-title-icon {
-            font-size: 14px;
+            gap: 8px;
         }
 
         .property-row {
@@ -408,22 +438,28 @@
 
         .property-label {
             font-size: 11px;
-            color: #666;
+            color: var(--text-dim);
             margin-bottom: 6px;
-            display: block;
+            display: flex;
+            justify-content: space-between;
         }
 
-        .property-slider {
+        .property-value {
+            color: var(--text);
+            font-family: monospace;
+        }
+
+        .slider-container {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .slider {
             flex: 1;
             -webkit-appearance: none;
             height: 4px;
-            background: #333;
+            background: var(--bg-dark);
             border-radius: 2px;
             outline: none;
         }
@@ -432,245 +468,279 @@
             -webkit-appearance: none;
             width: 14px;
             height: 14px;
-            background: #fff;
+            background: var(--accent);
             border-radius: 50%;
             cursor: pointer;
+            transition: transform 0.1s;
         }
 
         .slider::-webkit-slider-thumb:hover {
-            background: #ff6b6b;
+            transform: scale(1.2);
         }
 
-        .property-value {
+        .input-field {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
             font-size: 12px;
-            color: #aaa;
-            min-width: 45px;
-            text-align: right;
         }
 
-        .property-input {
-            width: 100%;
-            padding: 8px 10px;
-            background: #252525;
-            border: 1px solid #333;
-            border-radius: 4px;
-            color: #fff;
-            font-size: 13px;
-        }
-
-        .property-input:focus {
+        .input-field:focus {
             outline: none;
-            border-color: #ff6b6b;
+            border-color: var(--accent);
         }
 
-        .property-select {
+        .select-field {
             width: 100%;
             padding: 8px 10px;
-            background: #252525;
-            border: 1px solid #333;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
             border-radius: 4px;
-            color: #fff;
-            font-size: 13px;
+            color: var(--text);
+            font-size: 12px;
             cursor: pointer;
         }
 
         /* Timeline */
         .timeline {
-            height: 200px;
-            background: #141414;
-            border-top: 1px solid #333;
+            height: 220px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
         }
 
         .timeline-toolbar {
-            height: 36px;
-            background: #1a1a1a;
-            border-bottom: 1px solid #333;
+            height: 40px;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            justify-content: space-between;
             padding: 0 12px;
-        }
-
-        .timeline-title {
-            font-size: 12px;
-            font-weight: 500;
-            color: #888;
-        }
-
-        .zoom-controls {
-            display: flex;
-            align-items: center;
             gap: 8px;
         }
 
-        .zoom-btn {
-            width: 24px;
-            height: 24px;
-            background: #2a2a2a;
-            border: none;
-            border-radius: 3px;
-            color: #888;
+        .timeline-tool {
+            padding: 6px 10px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-dim);
             cursor: pointer;
-            font-size: 14px;
+            border-radius: 4px;
+            font-size: 11px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 4px;
+            transition: all 0.15s;
         }
 
-        .zoom-btn:hover {
-            background: #333;
-            color: #fff;
+        .timeline-tool:hover {
+            background: var(--bg-hover);
+            color: var(--text);
         }
 
-        .zoom-level {
-            font-size: 11px;
-            color: #666;
-            min-width: 40px;
-            text-align: center;
+        .timeline-tool.active {
+            background: var(--accent);
+            color: #000;
         }
 
-        .timeline-content {
+        .timeline-spacer {
+            flex: 1;
+        }
+
+        .zoom-slider {
+            width: 100px;
+        }
+
+        .timeline-body {
             flex: 1;
             display: flex;
             overflow: hidden;
         }
 
-        .track-labels {
-            width: 80px;
-            background: #1a1a1a;
-            border-right: 1px solid #333;
+        .track-headers {
+            width: 120px;
+            background: var(--bg-dark);
+            border-right: 1px solid var(--border);
             flex-shrink: 0;
         }
 
-        .track-label {
-            height: 50px;
+        .track-header {
+            height: 56px;
+            padding: 0 12px;
             display: flex;
             align-items: center;
-            padding: 0 10px;
-            gap: 6px;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
             font-size: 11px;
-            color: #888;
-            border-bottom: 1px solid #282828;
+            color: var(--text-dim);
         }
 
-        .track-label-icon {
-            font-size: 12px;
+        .track-header:first-child {
+            height: 32px;
         }
 
-        .track-label-icon.video { color: #ff6b6b; }
-        .track-label-icon.audio { color: #4ecdc4; }
+        .track-header-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .track-header-icon.video {
+            background: rgba(255, 87, 87, 0.2);
+            color: var(--video-color);
+        }
+
+        .track-header-icon.audio {
+            background: rgba(87, 179, 255, 0.2);
+            color: var(--audio-color);
+        }
+
+        .track-controls {
+            margin-left: auto;
+            display: flex;
+            gap: 4px;
+        }
+
+        .track-control-btn {
+            width: 20px;
+            height: 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        .track-control-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+        }
 
         .timeline-scroll {
             flex: 1;
             overflow-x: auto;
             overflow-y: hidden;
-            position: relative;
         }
 
-        .timeline-inner {
-            position: relative;
+        .timeline-content {
             min-width: 100%;
             height: 100%;
+            position: relative;
         }
 
         /* Time Ruler */
         .time-ruler {
-            height: 24px;
-            background: #1e1e1e;
-            border-bottom: 1px solid #333;
+            height: 32px;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border);
             position: relative;
+            cursor: pointer;
         }
 
-        .ruler-mark {
-            position: absolute;
-            top: 0;
+        .time-ruler canvas {
+            display: block;
+            width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .ruler-mark-line {
-            width: 1px;
-            background: #444;
-        }
-
-        .ruler-mark-line.major {
-            height: 12px;
-        }
-
-        .ruler-mark-line.minor {
-            height: 6px;
-        }
-
-        .ruler-mark-label {
-            font-size: 9px;
-            color: #666;
-            margin-top: 2px;
         }
 
         /* Tracks */
-        .tracks-container {
+        .tracks {
             position: relative;
         }
 
         .track {
-            height: 50px;
+            height: 56px;
             position: relative;
-            border-bottom: 1px solid #282828;
+            border-bottom: 1px solid var(--border);
         }
 
         .track-video {
-            background: rgba(255, 107, 107, 0.05);
+            background: rgba(255, 87, 87, 0.03);
         }
 
         .track-audio {
-            background: rgba(78, 205, 196, 0.05);
-        }
-
-        .track-empty {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 11px;
-            color: #444;
+            background: rgba(87, 179, 255, 0.03);
         }
 
         .clip {
             position: absolute;
-            top: 6px;
-            height: calc(100% - 12px);
+            top: 4px;
+            height: calc(100% - 8px);
             border-radius: 4px;
-            cursor: move;
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            font-size: 11px;
-            color: #fff;
+            cursor: pointer;
             overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            user-select: none;
+            transition: box-shadow 0.15s;
+        }
+
+        .clip:hover {
+            box-shadow: 0 0 0 2px var(--accent);
+        }
+
+        .clip.selected {
+            box-shadow: 0 0 0 2px var(--accent);
         }
 
         .clip-video {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            background: linear-gradient(180deg, var(--video-color) 0%, #cc4646 100%);
         }
 
         .clip-audio {
-            background: linear-gradient(135deg, #4ecdc4, #26a69a);
+            background: linear-gradient(180deg, var(--audio-color) 0%, #4690cc 100%);
+        }
+
+        .clip-content {
+            padding: 6px 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .clip-name {
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .clip-duration {
+            font-size: 9px;
+            opacity: 0.8;
+        }
+
+        .clip-waveform {
+            position: absolute;
+            bottom: 4px;
+            left: 8px;
+            right: 8px;
+            height: 20px;
+            opacity: 0.5;
         }
 
         .clip-handle {
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 6px;
+            width: 8px;
             cursor: ew-resize;
+            background: rgba(255,255,255,0.1);
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .clip:hover .clip-handle {
+            opacity: 1;
         }
 
         .clip-handle:hover {
@@ -684,37 +754,27 @@
         .playhead {
             position: absolute;
             top: 0;
-            bottom: 0;
             width: 2px;
-            background: #fff;
-            z-index: 50;
+            background: var(--accent);
+            z-index: 100;
             pointer-events: none;
         }
 
         .playhead::before {
             content: '';
             position: absolute;
-            top: -4px;
-            left: -5px;
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-top: 8px solid #fff;
-        }
-
-        /* Hidden inputs */
-        .hidden {
-            display: none !important;
+            top: 0;
+            left: -6px;
+            width: 14px;
+            height: 14px;
+            background: var(--accent);
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
         }
 
         /* Modal */
-        .modal-overlay {
+        .modal-backdrop {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0;
             background: rgba(0,0,0,0.8);
             display: none;
             align-items: center;
@@ -722,51 +782,75 @@
             z-index: 1000;
         }
 
-        .modal-overlay.active {
+        .modal-backdrop.active {
             display: flex;
         }
 
         .modal {
-            background: #1a1a1a;
-            border-radius: 8px;
+            background: var(--bg-panel);
+            border-radius: 12px;
             padding: 24px;
-            width: 400px;
+            width: 420px;
             max-width: 90%;
+            border: 1px solid var(--border);
         }
 
-        .modal h2 {
-            font-size: 18px;
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-bottom: 20px;
         }
 
-        .modal-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 20px;
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
         }
 
-        .modal-actions .btn {
-            flex: 1;
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 20px;
+            padding: 4px;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .progress-container {
+            margin-top: 16px;
         }
 
         .progress-bar {
-            height: 6px;
-            background: #333;
-            border-radius: 3px;
+            height: 8px;
+            background: var(--bg-dark);
+            border-radius: 4px;
             overflow: hidden;
-            margin-top: 12px;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #ee5a24);
+            background: linear-gradient(90deg, var(--accent), #00e4ba);
             width: 0%;
             transition: width 0.3s;
         }
 
         .progress-text {
             font-size: 12px;
-            color: #888;
+            color: var(--text-dim);
             text-align: center;
             margin-top: 8px;
         }
@@ -774,186 +858,198 @@
         /* Toast */
         .toast {
             position: fixed;
-            bottom: 220px;
+            bottom: 240px;
             left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 4px;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--bg-panel);
+            color: var(--text);
+            padding: 12px 20px;
+            border-radius: 8px;
             font-size: 13px;
             z-index: 500;
-            display: none;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
         }
 
         .toast.show {
-            display: block;
-            animation: fadeIn 0.3s;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
-        .toast.success { background: #27ae60; }
-        .toast.error { background: #e74c3c; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
+        .toast.success { border-color: var(--accent); }
+        .toast.error { border-color: #ff5757; }
 
         /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
-        ::-webkit-scrollbar-track {
-            background: #1a1a1a;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #444;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
+        /* Hidden */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 <script src="nav-box.js"></script>
 
-<div class="app">
+<div id="app">
     <!-- Header -->
     <header class="header">
-        <div class="logo">
-            <div class="logo-icon">▶</div>
-            <span>DimTools Video Editor</span>
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">▶</div>
+                <span>DimTools Editor</span>
+            </div>
         </div>
-        <div class="header-actions">
-            <button class="btn btn-secondary" onclick="resetProject()">New</button>
-            <button class="btn btn-primary" id="exportBtn" onclick="openExportModal()" disabled>Export</button>
+        <div class="header-center">
+            <button class="tool-btn active" data-tool="select" title="Select (V)">
+                <span>↖</span> Select
+            </button>
+            <button class="tool-btn" data-tool="cut" title="Split (S)">
+                <span>✂</span> Split
+            </button>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-ghost" onclick="newProject()">New</button>
+            <button class="btn btn-primary" id="exportBtn" onclick="showExportModal()" disabled>Export</button>
         </div>
     </header>
 
-    <!-- Main Workspace -->
+    <!-- Workspace -->
     <div class="workspace">
-        <!-- Left Sidebar -->
-        <aside class="sidebar-left">
-            <div class="sidebar-header">Media</div>
-            <div class="upload-buttons">
-                <div class="upload-btn" onclick="document.getElementById('videoInput').click()">
-                    <div class="upload-btn-icon video">▶</div>
-                    <div>
-                        <div style="font-weight: 500; color: #fff;">Add Video</div>
-                        <div style="font-size: 11px;">MP4, WebM, MOV</div>
+        <!-- Left Panel -->
+        <aside class="panel-left">
+            <div class="panel-tabs">
+                <button class="panel-tab active" data-tab="media">Media</button>
+                <button class="panel-tab" data-tab="audio">Audio</button>
+            </div>
+            <div class="panel-content">
+                <div id="mediaTab">
+                    <div class="upload-zone" onclick="document.getElementById('videoInput').click()">
+                        <div class="upload-zone-icon">🎬</div>
+                        <h4>Import Video</h4>
+                        <p>MP4, WebM, MOV, AVI</p>
                     </div>
+                    <input type="file" id="videoInput" class="hidden" accept="video/*">
+                    <div id="videoList"></div>
                 </div>
-                <div class="upload-btn" onclick="document.getElementById('audioInput').click()">
-                    <div class="upload-btn-icon audio">♪</div>
-                    <div>
-                        <div style="font-weight: 500; color: #fff;">Add Audio</div>
-                        <div style="font-size: 11px;">MP3, WAV, OGG</div>
+                <div id="audioTab" class="hidden">
+                    <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
+                        <div class="upload-zone-icon">🎵</div>
+                        <h4>Import Audio</h4>
+                        <p>MP3, WAV, OGG, AAC</p>
                     </div>
+                    <input type="file" id="audioInput" class="hidden" accept="audio/*">
+                    <div id="audioList"></div>
                 </div>
             </div>
-            <input type="file" id="videoInput" class="hidden" accept="video/*">
-            <input type="file" id="audioInput" class="hidden" accept="audio/*">
-            <div class="media-list" id="mediaList"></div>
         </aside>
 
-        <!-- Preview Area -->
+        <!-- Preview -->
         <main class="preview-area">
-            <div class="preview-wrapper">
-                <div class="video-container" id="videoContainer" style="display: none;">
-                    <video id="videoPreview"></video>
-                </div>
+            <div class="preview-container" id="previewContainer">
+                <video class="preview-video hidden" id="previewVideo"></video>
                 <div class="preview-empty" id="previewEmpty">
                     <div class="preview-empty-icon">🎬</div>
-                    <h3>No Video</h3>
-                    <p>Add a video to get started</p>
+                    <h3>Import media to start</h3>
+                    <p>Drag files or click Import</p>
                 </div>
             </div>
-
-            <!-- Playback Controls -->
-            <div class="playback-bar">
-                <div class="transport-controls">
-                    <button class="transport-btn" onclick="skipTime(-5)" title="Back 5s">⏪</button>
-                    <button class="transport-btn" onclick="skipTime(-1/30)" title="Previous frame">◀</button>
-                    <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
-                    <button class="transport-btn" onclick="skipTime(1/30)" title="Next frame">▶</button>
-                    <button class="transport-btn" onclick="skipTime(5)" title="Forward 5s">⏩</button>
-                </div>
+            <div class="transport">
+                <button class="transport-btn" onclick="seekStart()" title="Go to start">⏮</button>
+                <button class="transport-btn" onclick="stepBackward()" title="Previous frame">⏪</button>
+                <button class="transport-btn play-btn" id="playPauseBtn" onclick="togglePlayPause()">▶</button>
+                <button class="transport-btn" onclick="stepForward()" title="Next frame">⏩</button>
+                <button class="transport-btn" onclick="seekEnd()" title="Go to end">⏭</button>
                 <div class="time-display">
-                    <span class="time-current" id="currentTime">00:00.00</span>
-                    <span> / </span>
-                    <span id="totalTime">00:00.00</span>
+                    <span class="time-current" id="currentTimeDisplay">00:00:00:00</span>
+                    <span style="color: var(--text-dim)"> / </span>
+                    <span id="durationDisplay">00:00:00:00</span>
                 </div>
             </div>
         </main>
 
-        <!-- Right Sidebar -->
-        <aside class="sidebar-right">
-            <div class="property-section">
-                <div class="property-title">
-                    <span class="property-title-icon" style="color: #ff6b6b;">▶</span>
-                    Video
+        <!-- Right Panel -->
+        <aside class="panel-right">
+            <div class="properties-section">
+                <div class="properties-title">
+                    <span style="color: var(--video-color)">▶</span> Video
                 </div>
                 <div class="property-row">
-                    <label class="property-label">Speed</label>
-                    <div class="property-slider">
-                        <input type="range" class="slider" id="videoSpeed" min="0.25" max="4" step="0.05" value="1" oninput="setVideoSpeed(this.value)">
-                        <span class="property-value" id="videoSpeedVal">1.00x</span>
+                    <div class="property-label">
+                        <span>Speed</span>
+                        <span class="property-value" id="videoSpeedValue">1.00x</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="videoSpeedSlider"
+                               min="0.1" max="4" step="0.05" value="1">
                     </div>
                 </div>
                 <div class="property-row">
-                    <label class="property-label">Volume</label>
-                    <div class="property-slider">
-                        <input type="range" class="slider" id="videoVolume" min="0" max="1" step="0.01" value="0" oninput="setVideoVolume(this.value)">
-                        <span class="property-value" id="videoVolumeVal">0%</span>
+                    <div class="property-label">
+                        <span>Volume</span>
+                        <span class="property-value" id="videoVolumeValue">0%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="videoVolumeSlider"
+                               min="0" max="1" step="0.01" value="0">
                     </div>
                 </div>
             </div>
 
-            <div class="property-section">
-                <div class="property-title">
-                    <span class="property-title-icon" style="color: #4ecdc4;">♪</span>
-                    Audio Overlay
+            <div class="properties-section">
+                <div class="properties-title">
+                    <span style="color: var(--audio-color)">♪</span> Audio Overlay
                 </div>
                 <div class="property-row">
-                    <label class="property-label">Speed</label>
-                    <div class="property-slider">
-                        <input type="range" class="slider" id="audioSpeed" min="0.25" max="4" step="0.05" value="1" oninput="setAudioSpeed(this.value)">
-                        <span class="property-value" id="audioSpeedVal">1.00x</span>
+                    <div class="property-label">
+                        <span>Speed</span>
+                        <span class="property-value" id="audioSpeedValue">1.00x</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="audioSpeedSlider"
+                               min="0.1" max="4" step="0.05" value="1">
                     </div>
                 </div>
                 <div class="property-row">
-                    <label class="property-label">Volume</label>
-                    <div class="property-slider">
-                        <input type="range" class="slider" id="audioVolume" min="0" max="1" step="0.01" value="1" oninput="setAudioVolume(this.value)">
-                        <span class="property-value" id="audioVolumeVal">100%</span>
+                    <div class="property-label">
+                        <span>Volume</span>
+                        <span class="property-value" id="audioVolumeValue">100%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="audioVolumeSlider"
+                               min="0" max="1" step="0.01" value="1">
                     </div>
                 </div>
                 <div class="property-row">
-                    <label class="property-label">Offset (seconds)</label>
-                    <input type="number" class="property-input" id="audioOffset" value="0" step="0.1" onchange="setAudioOffset(this.value)">
+                    <div class="property-label">
+                        <span>Start Offset</span>
+                    </div>
+                    <input type="number" class="input-field" id="audioOffsetInput"
+                           value="0" step="0.1" style="width: 100%;">
+                    <p style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+                        Seconds delay from video start
+                    </p>
                 </div>
             </div>
 
-            <div class="property-section">
-                <div class="property-title">Export Settings</div>
+            <div class="properties-section">
+                <div class="properties-title">Export Settings</div>
                 <div class="property-row">
-                    <label class="property-label">Format</label>
-                    <select class="property-select" id="exportFormat">
-                        <option value="mp4">MP4</option>
-                        <option value="webm">WebM</option>
+                    <div class="property-label"><span>Format</span></div>
+                    <select class="select-field" id="exportFormat">
+                        <option value="mp4">MP4 (H.264)</option>
+                        <option value="webm">WebM (VP9)</option>
                     </select>
                 </div>
                 <div class="property-row">
-                    <label class="property-label">Quality</label>
-                    <select class="property-select" id="exportQuality">
-                        <option value="high">High</option>
+                    <div class="property-label"><span>Quality</span></div>
+                    <select class="select-field" id="exportQuality">
+                        <option value="high">High Quality</option>
                         <option value="medium" selected>Medium</option>
-                        <option value="low">Low</option>
+                        <option value="low">Low (Fast)</option>
                     </select>
                 </div>
             </div>
@@ -963,35 +1059,44 @@
     <!-- Timeline -->
     <div class="timeline">
         <div class="timeline-toolbar">
-            <span class="timeline-title">Timeline</span>
-            <div class="zoom-controls">
-                <button class="zoom-btn" onclick="zoomTimeline(-1)">−</button>
-                <span class="zoom-level" id="zoomLevel">100%</span>
-                <button class="zoom-btn" onclick="zoomTimeline(1)">+</button>
-            </div>
+            <button class="timeline-tool" onclick="splitAtPlayhead()" title="Split clip at playhead">
+                ✂ Split
+            </button>
+            <button class="timeline-tool" onclick="deleteSelected()" title="Delete selected">
+                🗑 Delete
+            </button>
+            <div class="timeline-spacer"></div>
+            <span style="font-size: 11px; color: var(--text-dim);">Zoom:</span>
+            <input type="range" class="slider zoom-slider" id="zoomSlider"
+                   min="0.5" max="4" step="0.1" value="1">
+            <span style="font-size: 11px; color: var(--text-dim); min-width: 40px;" id="zoomValue">100%</span>
         </div>
-        <div class="timeline-content">
-            <div class="track-labels">
-                <div class="track-label" style="height: 24px;"></div>
-                <div class="track-label">
-                    <span class="track-label-icon video">▶</span>
-                    Video
+        <div class="timeline-body">
+            <div class="track-headers">
+                <div class="track-header"></div>
+                <div class="track-header">
+                    <div class="track-header-icon video">▶</div>
+                    <span>Video</span>
+                    <div class="track-controls">
+                        <button class="track-control-btn" title="Mute video">🔇</button>
+                    </div>
                 </div>
-                <div class="track-label">
-                    <span class="track-label-icon audio">♪</span>
-                    Audio
+                <div class="track-header">
+                    <div class="track-header-icon audio">♪</div>
+                    <span>Audio</span>
+                    <div class="track-controls">
+                        <button class="track-control-btn" title="Mute audio">🔇</button>
+                    </div>
                 </div>
             </div>
             <div class="timeline-scroll" id="timelineScroll">
-                <div class="timeline-inner" id="timelineInner">
-                    <div class="time-ruler" id="timeRuler"></div>
-                    <div class="tracks-container">
-                        <div class="track track-video" id="videoTrack">
-                            <span class="track-empty" id="videoTrackEmpty">Drop video here</span>
-                        </div>
-                        <div class="track track-audio" id="audioTrack">
-                            <span class="track-empty" id="audioTrackEmpty">Drop audio here</span>
-                        </div>
+                <div class="timeline-content" id="timelineContent">
+                    <div class="time-ruler" id="timeRuler">
+                        <canvas id="rulerCanvas"></canvas>
+                    </div>
+                    <div class="tracks" id="tracks">
+                        <div class="track track-video" id="videoTrack"></div>
+                        <div class="track track-audio" id="audioTrack"></div>
                     </div>
                     <div class="playhead" id="playhead"></div>
                 </div>
@@ -1001,19 +1106,26 @@
 </div>
 
 <!-- Export Modal -->
-<div class="modal-overlay" id="exportModal">
+<div class="modal-backdrop" id="exportModal">
     <div class="modal">
-        <h2>Export Video</h2>
-        <div class="property-row">
-            <label class="property-label">Filename</label>
-            <input type="text" class="property-input" id="exportFilename" value="my-video">
+        <div class="modal-header">
+            <h2 class="modal-title">Export Video</h2>
+            <button class="modal-close" onclick="hideExportModal()">×</button>
         </div>
-        <div class="progress-bar" id="exportProgress" style="display: none;">
-            <div class="progress-fill" id="progressFill"></div>
+        <div class="modal-body">
+            <div class="property-row">
+                <div class="property-label"><span>Filename</span></div>
+                <input type="text" class="input-field" id="exportFilename" value="my-video">
+            </div>
+            <div class="progress-container hidden" id="exportProgressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="exportProgressBar"></div>
+                </div>
+                <div class="progress-text" id="exportProgressText">Preparing...</div>
+            </div>
         </div>
-        <p class="progress-text" id="progressText" style="display: none;">Preparing...</p>
-        <div class="modal-actions">
-            <button class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="hideExportModal()">Cancel</button>
             <button class="btn btn-primary" id="startExportBtn" onclick="startExport()">Export</button>
         </div>
     </div>
@@ -1023,463 +1135,737 @@
 <div class="toast" id="toast"></div>
 
 <!-- Hidden Audio -->
-<audio id="audioPlayer"></audio>
+<audio id="audioElement"></audio>
 
 <script>
-    // State
-    let videoFile = null;
-    let audioFile = null;
-    let isPlaying = false;
-    let audioOffset = 0;
-    let zoom = 1;
-    let pixelsPerSecond = 50;
-    let ffmpeg = null;
-    let ffmpegLoaded = false;
+// ============ STATE ============
+const state = {
+    videoFile: null,
+    audioFile: null,
+    videoDuration: 0,
+    audioDuration: 0,
+    currentTime: 0,
+    isPlaying: false,
+    zoom: 1,
+    pixelsPerSecond: 100,
+    audioOffset: 0,
+    selectedClip: null,
+    tool: 'select'
+};
 
-    // Elements
-    const video = document.getElementById('videoPreview');
-    const audio = document.getElementById('audioPlayer');
-    const playBtn = document.getElementById('playBtn');
-    const playhead = document.getElementById('playhead');
-    const timeRuler = document.getElementById('timeRuler');
-    const timelineInner = document.getElementById('timelineInner');
-    const timelineScroll = document.getElementById('timelineScroll');
+// ============ ELEMENTS ============
+const els = {
+    video: document.getElementById('previewVideo'),
+    audio: document.getElementById('audioElement'),
+    previewContainer: document.getElementById('previewContainer'),
+    previewEmpty: document.getElementById('previewEmpty'),
+    playPauseBtn: document.getElementById('playPauseBtn'),
+    currentTimeDisplay: document.getElementById('currentTimeDisplay'),
+    durationDisplay: document.getElementById('durationDisplay'),
+    timelineScroll: document.getElementById('timelineScroll'),
+    timelineContent: document.getElementById('timelineContent'),
+    videoTrack: document.getElementById('videoTrack'),
+    audioTrack: document.getElementById('audioTrack'),
+    playhead: document.getElementById('playhead'),
+    rulerCanvas: document.getElementById('rulerCanvas'),
+    timeRuler: document.getElementById('timeRuler'),
+    zoomSlider: document.getElementById('zoomSlider'),
+    zoomValue: document.getElementById('zoomValue'),
+    exportBtn: document.getElementById('exportBtn')
+};
 
-    // Initialize
-    document.getElementById('videoInput').addEventListener('change', e => {
-        if (e.target.files[0]) loadVideo(e.target.files[0]);
+// ============ INIT ============
+function init() {
+    // File inputs
+    document.getElementById('videoInput').addEventListener('change', handleVideoInput);
+    document.getElementById('audioInput').addEventListener('change', handleAudioInput);
+
+    // Video events
+    els.video.addEventListener('loadedmetadata', onVideoLoaded);
+    els.video.addEventListener('timeupdate', onTimeUpdate);
+    els.video.addEventListener('ended', onVideoEnded);
+
+    // Audio events
+    els.audio.addEventListener('loadedmetadata', onAudioLoaded);
+
+    // Sliders
+    document.getElementById('videoSpeedSlider').addEventListener('input', onVideoSpeedChange);
+    document.getElementById('videoVolumeSlider').addEventListener('input', onVideoVolumeChange);
+    document.getElementById('audioSpeedSlider').addEventListener('input', onAudioSpeedChange);
+    document.getElementById('audioVolumeSlider').addEventListener('input', onAudioVolumeChange);
+    document.getElementById('audioOffsetInput').addEventListener('change', onAudioOffsetChange);
+    els.zoomSlider.addEventListener('input', onZoomChange);
+
+    // Timeline click to seek
+    els.timeRuler.addEventListener('click', onRulerClick);
+    document.getElementById('tracks').addEventListener('click', onTracksClick);
+
+    // Panel tabs
+    document.querySelectorAll('.panel-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    document.getElementById('audioInput').addEventListener('change', e => {
-        if (e.target.files[0]) loadAudio(e.target.files[0]);
+    // Tool buttons
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+        btn.addEventListener('click', () => selectTool(btn.dataset.tool));
     });
-
-    video.addEventListener('timeupdate', updatePlayhead);
-    video.addEventListener('loadedmetadata', onVideoLoad);
-    video.addEventListener('ended', () => { isPlaying = false; playBtn.textContent = '▶'; });
-
-    // Load video
-    function loadVideo(file) {
-        videoFile = file;
-        video.src = URL.createObjectURL(file);
-        document.getElementById('videoContainer').style.display = 'block';
-        document.getElementById('previewEmpty').style.display = 'none';
-        updateMediaList();
-        toast('Video loaded', 'success');
-    }
-
-    // Load audio
-    function loadAudio(file) {
-        audioFile = file;
-        audio.src = URL.createObjectURL(file);
-        audio.addEventListener('loadedmetadata', () => {
-            updateAudioClip();
-            updateMediaList();
-        }, { once: true });
-        toast('Audio loaded', 'success');
-    }
-
-    // On video loaded
-    function onVideoLoad() {
-        document.getElementById('totalTime').textContent = formatTime(video.duration);
-        document.getElementById('exportBtn').disabled = false;
-        updateVideoClip();
-        drawRuler();
-    }
-
-    // Update media list
-    function updateMediaList() {
-        const list = document.getElementById('mediaList');
-        list.innerHTML = '';
-
-        if (videoFile) {
-            list.innerHTML += `
-                <div class="media-item">
-                    <div class="media-icon video">▶</div>
-                    <div class="media-info">
-                        <div class="media-name">${videoFile.name}</div>
-                        <div class="media-duration">${formatFileSize(videoFile.size)}</div>
-                    </div>
-                    <button class="media-remove" onclick="removeVideo()">×</button>
-                </div>`;
-        }
-
-        if (audioFile) {
-            list.innerHTML += `
-                <div class="media-item">
-                    <div class="media-icon audio">♪</div>
-                    <div class="media-info">
-                        <div class="media-name">${audioFile.name}</div>
-                        <div class="media-duration">${formatFileSize(audioFile.size)}</div>
-                    </div>
-                    <button class="media-remove" onclick="removeAudio()">×</button>
-                </div>`;
-        }
-    }
-
-    // Remove video
-    function removeVideo() {
-        videoFile = null;
-        video.src = '';
-        document.getElementById('videoContainer').style.display = 'none';
-        document.getElementById('previewEmpty').style.display = 'block';
-        document.getElementById('videoTrack').innerHTML = '<span class="track-empty">Drop video here</span>';
-        document.getElementById('exportBtn').disabled = true;
-        updateMediaList();
-        drawRuler();
-    }
-
-    // Remove audio
-    function removeAudio() {
-        audioFile = null;
-        audio.src = '';
-        document.getElementById('audioTrack').innerHTML = '<span class="track-empty">Drop audio here</span>';
-        updateMediaList();
-    }
-
-    // Play/Pause
-    function togglePlay() {
-        if (!videoFile) return toast('Add a video first', 'error');
-
-        if (isPlaying) {
-            video.pause();
-            audio.pause();
-            playBtn.textContent = '▶';
-        } else {
-            video.play();
-            syncAudio();
-            playBtn.textContent = '⏸';
-        }
-        isPlaying = !isPlaying;
-    }
-
-    // Sync audio with video
-    function syncAudio() {
-        if (!audioFile) return;
-
-        const audioTime = video.currentTime - audioOffset;
-        if (audioTime >= 0 && audioTime < audio.duration) {
-            audio.currentTime = audioTime;
-            audio.play();
-        } else if (audioTime < 0) {
-            audio.pause();
-            setTimeout(() => {
-                if (isPlaying) {
-                    audio.currentTime = 0;
-                    audio.play();
-                }
-            }, Math.abs(audioTime) * 1000);
-        }
-    }
-
-    // Skip time
-    function skipTime(delta) {
-        if (!videoFile) return;
-        video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + delta));
-        updatePlayhead();
-        if (isPlaying) syncAudio();
-    }
-
-    // Update playhead
-    function updatePlayhead() {
-        const time = video.currentTime || 0;
-        document.getElementById('currentTime').textContent = formatTime(time);
-        playhead.style.left = (time * pixelsPerSecond * zoom) + 'px';
-
-        // Keep audio synced
-        if (isPlaying && audioFile) {
-            const expectedAudioTime = time - audioOffset;
-            if (expectedAudioTime >= 0 && expectedAudioTime < audio.duration) {
-                if (Math.abs(audio.currentTime - expectedAudioTime) > 0.3) {
-                    audio.currentTime = expectedAudioTime;
-                }
-                if (audio.paused) audio.play();
-            }
-        }
-    }
-
-    // Speed/Volume controls
-    function setVideoSpeed(val) {
-        video.playbackRate = parseFloat(val);
-        document.getElementById('videoSpeedVal').textContent = parseFloat(val).toFixed(2) + 'x';
-    }
-
-    function setVideoVolume(val) {
-        video.volume = parseFloat(val);
-        video.muted = val == 0;
-        document.getElementById('videoVolumeVal').textContent = Math.round(val * 100) + '%';
-    }
-
-    function setAudioSpeed(val) {
-        audio.playbackRate = parseFloat(val);
-        document.getElementById('audioSpeedVal').textContent = parseFloat(val).toFixed(2) + 'x';
-    }
-
-    function setAudioVolume(val) {
-        audio.volume = parseFloat(val);
-        document.getElementById('audioVolumeVal').textContent = Math.round(val * 100) + '%';
-    }
-
-    function setAudioOffset(val) {
-        audioOffset = parseFloat(val) || 0;
-        updateAudioClip();
-    }
-
-    // Timeline clips
-    function updateVideoClip() {
-        const track = document.getElementById('videoTrack');
-        const duration = video.duration || 0;
-        const width = duration * pixelsPerSecond * zoom;
-
-        track.innerHTML = `<div class="clip clip-video" style="left: 0; width: ${width}px;">${videoFile?.name || 'Video'}</div>`;
-        updateTimelineWidth();
-    }
-
-    function updateAudioClip() {
-        const track = document.getElementById('audioTrack');
-        const duration = audio.duration || 0;
-        const width = duration * pixelsPerSecond * zoom;
-        const left = Math.max(0, audioOffset * pixelsPerSecond * zoom);
-
-        track.innerHTML = `<div class="clip clip-audio" style="left: ${left}px; width: ${width}px;"
-            onmousedown="startDragClip(event, 'audio')">${audioFile?.name || 'Audio'}</div>`;
-        updateTimelineWidth();
-    }
-
-    function updateTimelineWidth() {
-        const videoDur = video.duration || 0;
-        const audioDur = (audio.duration || 0) + Math.max(0, audioOffset);
-        const maxDur = Math.max(videoDur, audioDur, 30);
-        timelineInner.style.width = (maxDur * pixelsPerSecond * zoom + 100) + 'px';
-    }
-
-    // Drag audio clip
-    let dragClip = null;
-    let dragStartX = 0;
-    let dragStartOffset = 0;
-
-    function startDragClip(e, type) {
-        if (type !== 'audio') return;
-        dragClip = e.target;
-        dragStartX = e.clientX;
-        dragStartOffset = audioOffset;
-        document.addEventListener('mousemove', dragClipMove);
-        document.addEventListener('mouseup', dragClipEnd);
-    }
-
-    function dragClipMove(e) {
-        if (!dragClip) return;
-        const dx = e.clientX - dragStartX;
-        const newOffset = Math.max(0, dragStartOffset + dx / (pixelsPerSecond * zoom));
-        audioOffset = newOffset;
-        document.getElementById('audioOffset').value = newOffset.toFixed(2);
-        dragClip.style.left = (newOffset * pixelsPerSecond * zoom) + 'px';
-    }
-
-    function dragClipEnd() {
-        dragClip = null;
-        document.removeEventListener('mousemove', dragClipMove);
-        document.removeEventListener('mouseup', dragClipEnd);
-    }
-
-    // Draw time ruler
-    function drawRuler() {
-        const duration = Math.max(video.duration || 30, (audio.duration || 0) + audioOffset, 30);
-        let html = '';
-
-        let interval = 1;
-        if (zoom < 0.5) interval = 5;
-        if (zoom < 0.25) interval = 10;
-        if (zoom > 2) interval = 0.5;
-
-        for (let t = 0; t <= duration; t += interval) {
-            const x = t * pixelsPerSecond * zoom;
-            const isMajor = t % (interval * 5 === 0 ? interval : interval * 2) === 0 || interval >= 5;
-
-            html += `<div class="ruler-mark" style="left: ${x}px;">
-                <div class="ruler-mark-line ${isMajor ? 'major' : 'minor'}"></div>
-                ${isMajor ? `<span class="ruler-mark-label">${formatTimeShort(t)}</span>` : ''}
-            </div>`;
-        }
-
-        timeRuler.innerHTML = html;
-    }
-
-    // Click ruler to seek
-    timelineScroll.addEventListener('click', (e) => {
-        if (!videoFile || e.target.closest('.clip')) return;
-        const rect = timelineScroll.getBoundingClientRect();
-        const x = e.clientX - rect.left + timelineScroll.scrollLeft;
-        const time = x / (pixelsPerSecond * zoom);
-        video.currentTime = Math.max(0, Math.min(video.duration, time));
-        updatePlayhead();
-    });
-
-    // Zoom
-    function zoomTimeline(dir) {
-        if (dir > 0) zoom = Math.min(4, zoom * 1.25);
-        else zoom = Math.max(0.25, zoom / 1.25);
-
-        document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-
-        if (videoFile) updateVideoClip();
-        if (audioFile) updateAudioClip();
-        drawRuler();
-        updatePlayhead();
-    }
-
-    // Export
-    function openExportModal() {
-        document.getElementById('exportModal').classList.add('active');
-    }
-
-    function closeExportModal() {
-        document.getElementById('exportModal').classList.remove('active');
-        document.getElementById('exportProgress').style.display = 'none';
-        document.getElementById('progressText').style.display = 'none';
-    }
-
-    async function startExport() {
-        const filename = document.getElementById('exportFilename').value || 'video';
-        const format = document.getElementById('exportFormat').value;
-
-        document.getElementById('exportProgress').style.display = 'block';
-        document.getElementById('progressText').style.display = 'block';
-        document.getElementById('progressText').textContent = 'Loading FFmpeg...';
-        document.getElementById('startExportBtn').disabled = true;
-
-        try {
-            if (!ffmpegLoaded) {
-                const { FFmpeg } = FFmpegWASM;
-                const { fetchFile, toBlobURL } = FFmpegUtil;
-
-                ffmpeg = new FFmpeg();
-                ffmpeg.on('progress', ({ progress }) => {
-                    const pct = Math.round(progress * 100);
-                    document.getElementById('progressFill').style.width = pct + '%';
-                    document.getElementById('progressText').textContent = `Processing: ${pct}%`;
-                });
-
-                const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/esm';
-                await ffmpeg.load({
-                    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-                });
-                ffmpegLoaded = true;
-            }
-
-            const { fetchFile } = FFmpegUtil;
-            document.getElementById('progressText').textContent = 'Preparing files...';
-
-            const videoExt = videoFile.name.split('.').pop();
-            await ffmpeg.writeFile(`input.${videoExt}`, await fetchFile(videoFile));
-
-            let args = ['-i', `input.${videoExt}`];
-
-            if (audioFile) {
-                const audioExt = audioFile.name.split('.').pop();
-                await ffmpeg.writeFile(`audio.${audioExt}`, await fetchFile(audioFile));
-
-                if (audioOffset >= 0) {
-                    args.push('-itsoffset', audioOffset.toString(), '-i', `audio.${audioExt}`);
-                } else {
-                    args.push('-ss', Math.abs(audioOffset).toString(), '-i', `audio.${audioExt}`);
-                }
-
-                const videoVol = parseFloat(document.getElementById('videoVolume').value);
-                const audioVol = parseFloat(document.getElementById('audioVolume').value);
-
-                args.push('-filter_complex',
-                    `[0:a]volume=${videoVol}[va];[1:a]volume=${audioVol}[aa];[va][aa]amix=inputs=2:duration=longest[a]`);
-                args.push('-map', '0:v', '-map', '[a]');
-            }
-
-            if (format === 'mp4') {
-                args.push('-c:v', 'libx264', '-c:a', 'aac');
-            } else {
-                args.push('-c:v', 'libvpx-vp9', '-c:a', 'libopus');
-            }
-
-            args.push('-y', `output.${format}`);
-
-            document.getElementById('progressText').textContent = 'Encoding...';
-            await ffmpeg.exec(args);
-
-            const data = await ffmpeg.readFile(`output.${format}`);
-            const blob = new Blob([data.buffer], { type: `video/${format}` });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${filename}.${format}`;
-            a.click();
-            URL.revokeObjectURL(url);
-
-            document.getElementById('progressText').textContent = 'Done!';
-            document.getElementById('progressFill').style.width = '100%';
-            toast('Export complete!', 'success');
-
-            setTimeout(closeExportModal, 1500);
-
-        } catch (err) {
-            console.error(err);
-            document.getElementById('progressText').textContent = 'Error: ' + err.message;
-            toast('Export failed', 'error');
-        }
-
-        document.getElementById('startExportBtn').disabled = false;
-    }
-
-    // Reset
-    function resetProject() {
-        if ((videoFile || audioFile) && !confirm('Start new project?')) return;
-        removeVideo();
-        removeAudio();
-        audioOffset = 0;
-        document.getElementById('audioOffset').value = 0;
-        zoom = 1;
-        document.getElementById('zoomLevel').textContent = '100%';
-        drawRuler();
-    }
-
-    // Toast
-    function toast(msg, type) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.className = 'toast show ' + (type || '');
-        setTimeout(() => t.classList.remove('show'), 3000);
-    }
-
-    // Utils
-    function formatTime(s) {
-        const m = Math.floor(s / 60);
-        const sec = Math.floor(s % 60);
-        const ms = Math.floor((s % 1) * 100);
-        return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
-    }
-
-    function formatTimeShort(s) {
-        const m = Math.floor(s / 60);
-        const sec = Math.floor(s % 60);
-        return `${m}:${sec.toString().padStart(2, '0')}`;
-    }
-
-    function formatFileSize(b) {
-        if (b < 1024) return b + ' B';
-        if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
-        return (b / (1024 * 1024)).toFixed(1) + ' MB';
-    }
 
     // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-        if (e.code === 'ArrowLeft') { e.preventDefault(); skipTime(e.shiftKey ? -5 : -1); }
-        if (e.code === 'ArrowRight') { e.preventDefault(); skipTime(e.shiftKey ? 5 : 1); }
-    });
+    document.addEventListener('keydown', onKeyDown);
 
-    // Init
+    // Resize
+    window.addEventListener('resize', drawRuler);
+
+    // Initial draw
     drawRuler();
+    updatePlayhead();
+}
+
+// ============ FILE HANDLING ============
+function handleVideoInput(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    state.videoFile = file;
+    els.video.src = URL.createObjectURL(file);
+    els.video.classList.remove('hidden');
+    els.previewEmpty.classList.add('hidden');
+
+    toast('Video imported', 'success');
+    updateMediaList();
+}
+
+function handleAudioInput(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    state.audioFile = file;
+    els.audio.src = URL.createObjectURL(file);
+
+    toast('Audio imported', 'success');
+    updateMediaList();
+}
+
+function onVideoLoaded() {
+    state.videoDuration = els.video.duration;
+    els.durationDisplay.textContent = formatTimecode(state.videoDuration);
+    els.exportBtn.disabled = false;
+
+    updateTimeline();
+    drawRuler();
+    renderVideoClip();
+}
+
+function onAudioLoaded() {
+    state.audioDuration = els.audio.duration;
+    renderAudioClip();
+    updateTimeline();
+    drawRuler();
+}
+
+// ============ PLAYBACK ============
+function togglePlayPause() {
+    if (!state.videoFile) {
+        toast('Import a video first', 'error');
+        return;
+    }
+
+    if (state.isPlaying) {
+        pause();
+    } else {
+        play();
+    }
+}
+
+function play() {
+    state.isPlaying = true;
+    els.playPauseBtn.textContent = '⏸';
+    els.video.play();
+    syncAudio();
+}
+
+function pause() {
+    state.isPlaying = false;
+    els.playPauseBtn.textContent = '▶';
+    els.video.pause();
+    els.audio.pause();
+}
+
+function syncAudio() {
+    if (!state.audioFile) return;
+
+    const audioTime = els.video.currentTime - state.audioOffset;
+
+    if (audioTime >= 0 && audioTime < state.audioDuration) {
+        els.audio.currentTime = audioTime;
+        if (state.isPlaying && els.audio.paused) {
+            els.audio.play();
+        }
+    } else if (audioTime < 0) {
+        els.audio.pause();
+        els.audio.currentTime = 0;
+    } else {
+        els.audio.pause();
+    }
+}
+
+function onTimeUpdate() {
+    state.currentTime = els.video.currentTime;
+    els.currentTimeDisplay.textContent = formatTimecode(state.currentTime);
+    updatePlayhead();
+
+    // Keep audio in sync
+    if (state.isPlaying && state.audioFile) {
+        const expectedAudioTime = state.currentTime - state.audioOffset;
+        const actualAudioTime = els.audio.currentTime;
+
+        if (expectedAudioTime >= 0 && expectedAudioTime < state.audioDuration) {
+            if (Math.abs(expectedAudioTime - actualAudioTime) > 0.2) {
+                els.audio.currentTime = expectedAudioTime;
+            }
+            if (els.audio.paused) els.audio.play();
+        }
+    }
+}
+
+function onVideoEnded() {
+    pause();
+}
+
+function seekStart() {
+    els.video.currentTime = 0;
+    syncAudio();
+}
+
+function seekEnd() {
+    if (state.videoDuration) {
+        els.video.currentTime = state.videoDuration;
+    }
+}
+
+function stepForward() {
+    els.video.currentTime = Math.min(state.videoDuration, els.video.currentTime + 1/30);
+    syncAudio();
+}
+
+function stepBackward() {
+    els.video.currentTime = Math.max(0, els.video.currentTime - 1/30);
+    syncAudio();
+}
+
+function seekTo(time) {
+    els.video.currentTime = Math.max(0, Math.min(state.videoDuration || 0, time));
+    syncAudio();
+}
+
+// ============ TIMELINE ============
+function updateTimeline() {
+    const duration = Math.max(state.videoDuration, state.audioDuration + state.audioOffset, 30);
+    const width = duration * state.pixelsPerSecond * state.zoom;
+    els.timelineContent.style.width = (width + 200) + 'px';
+}
+
+function updatePlayhead() {
+    const x = state.currentTime * state.pixelsPerSecond * state.zoom;
+    els.playhead.style.left = x + 'px';
+    els.playhead.style.height = (32 + 56 * 2) + 'px';
+}
+
+function drawRuler() {
+    const canvas = els.rulerCanvas;
+    const rect = els.timelineContent.getBoundingClientRect();
+
+    canvas.width = Math.max(rect.width, 2000);
+    canvas.height = 32;
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const pps = state.pixelsPerSecond * state.zoom;
+    const duration = Math.max(state.videoDuration, state.audioDuration + state.audioOffset, 60);
+
+    // Determine tick interval based on zoom
+    let majorInterval = 1;
+    let minorDivisions = 4;
+
+    if (state.zoom < 0.5) {
+        majorInterval = 5;
+        minorDivisions = 5;
+    } else if (state.zoom < 0.3) {
+        majorInterval = 10;
+        minorDivisions = 5;
+    } else if (state.zoom > 2) {
+        majorInterval = 0.5;
+        minorDivisions = 5;
+    }
+
+    const minorInterval = majorInterval / minorDivisions;
+
+    // Draw ticks
+    for (let t = 0; t <= duration + majorInterval; t += minorInterval) {
+        const x = t * pps;
+        const isMajor = Math.abs(t % majorInterval) < 0.001 || Math.abs(t % majorInterval - majorInterval) < 0.001;
+
+        ctx.beginPath();
+        ctx.strokeStyle = isMajor ? '#666' : '#444';
+        ctx.lineWidth = 1;
+        ctx.moveTo(x, isMajor ? 16 : 24);
+        ctx.lineTo(x, 32);
+        ctx.stroke();
+
+        if (isMajor) {
+            ctx.fillStyle = '#888';
+            ctx.font = '10px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(formatTimeShort(t), x, 12);
+        }
+    }
+}
+
+function renderVideoClip() {
+    if (!state.videoFile) {
+        els.videoTrack.innerHTML = '';
+        return;
+    }
+
+    const width = state.videoDuration * state.pixelsPerSecond * state.zoom;
+
+    els.videoTrack.innerHTML = `
+        <div class="clip clip-video" style="left: 0; width: ${width}px;" data-type="video">
+            <div class="clip-handle clip-handle-left"></div>
+            <div class="clip-content">
+                <div class="clip-name">${state.videoFile.name}</div>
+                <div class="clip-duration">${formatTimeShort(state.videoDuration)}</div>
+            </div>
+            <div class="clip-handle clip-handle-right"></div>
+        </div>
+    `;
+}
+
+function renderAudioClip() {
+    if (!state.audioFile) {
+        els.audioTrack.innerHTML = '';
+        return;
+    }
+
+    const width = state.audioDuration * state.pixelsPerSecond * state.zoom;
+    const left = state.audioOffset * state.pixelsPerSecond * state.zoom;
+
+    els.audioTrack.innerHTML = `
+        <div class="clip clip-audio" style="left: ${left}px; width: ${width}px;"
+             data-type="audio" onmousedown="startDragAudioClip(event)">
+            <div class="clip-handle clip-handle-left"></div>
+            <div class="clip-content">
+                <div class="clip-name">${state.audioFile.name}</div>
+                <div class="clip-duration">${formatTimeShort(state.audioDuration)}</div>
+            </div>
+            <div class="clip-handle clip-handle-right"></div>
+        </div>
+    `;
+}
+
+// Audio clip drag
+let dragState = null;
+
+function startDragAudioClip(e) {
+    if (e.target.classList.contains('clip-handle')) return;
+
+    dragState = {
+        startX: e.clientX,
+        startOffset: state.audioOffset
+    };
+
+    document.addEventListener('mousemove', onDragAudioClip);
+    document.addEventListener('mouseup', stopDragAudioClip);
+    e.preventDefault();
+}
+
+function onDragAudioClip(e) {
+    if (!dragState) return;
+
+    const dx = e.clientX - dragState.startX;
+    const dt = dx / (state.pixelsPerSecond * state.zoom);
+    state.audioOffset = Math.max(0, dragState.startOffset + dt);
+
+    document.getElementById('audioOffsetInput').value = state.audioOffset.toFixed(2);
+    renderAudioClip();
+}
+
+function stopDragAudioClip() {
+    dragState = null;
+    document.removeEventListener('mousemove', onDragAudioClip);
+    document.removeEventListener('mouseup', stopDragAudioClip);
+}
+
+function onRulerClick(e) {
+    const rect = els.timeRuler.getBoundingClientRect();
+    const x = e.clientX - rect.left + els.timelineScroll.scrollLeft;
+    const time = x / (state.pixelsPerSecond * state.zoom);
+    seekTo(time);
+}
+
+function onTracksClick(e) {
+    if (e.target.closest('.clip')) return;
+
+    const rect = document.getElementById('tracks').getBoundingClientRect();
+    const x = e.clientX - rect.left + els.timelineScroll.scrollLeft;
+    const time = x / (state.pixelsPerSecond * state.zoom);
+    seekTo(time);
+}
+
+// ============ CONTROLS ============
+function onVideoSpeedChange(e) {
+    const speed = parseFloat(e.target.value);
+    els.video.playbackRate = speed;
+    document.getElementById('videoSpeedValue').textContent = speed.toFixed(2) + 'x';
+}
+
+function onVideoVolumeChange(e) {
+    const vol = parseFloat(e.target.value);
+    els.video.volume = vol;
+    els.video.muted = vol === 0;
+    document.getElementById('videoVolumeValue').textContent = Math.round(vol * 100) + '%';
+}
+
+function onAudioSpeedChange(e) {
+    const speed = parseFloat(e.target.value);
+    els.audio.playbackRate = speed;
+    document.getElementById('audioSpeedValue').textContent = speed.toFixed(2) + 'x';
+}
+
+function onAudioVolumeChange(e) {
+    const vol = parseFloat(e.target.value);
+    els.audio.volume = vol;
+    document.getElementById('audioVolumeValue').textContent = Math.round(vol * 100) + '%';
+}
+
+function onAudioOffsetChange(e) {
+    state.audioOffset = parseFloat(e.target.value) || 0;
+    renderAudioClip();
+    updateTimeline();
+}
+
+function onZoomChange(e) {
+    state.zoom = parseFloat(e.target.value);
+    els.zoomValue.textContent = Math.round(state.zoom * 100) + '%';
+
+    updateTimeline();
+    drawRuler();
+    renderVideoClip();
+    renderAudioClip();
+    updatePlayhead();
+}
+
+// ============ TOOLS ============
+function selectTool(tool) {
+    state.tool = tool;
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tool === tool);
+    });
+}
+
+function splitAtPlayhead() {
+    toast('Split at ' + formatTimecode(state.currentTime), 'success');
+    // In a full implementation, this would split the clip
+}
+
+function deleteSelected() {
+    toast('Delete selected clip', 'success');
+}
+
+// ============ TABS ============
+function switchTab(tab) {
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.panel-tab[data-tab="${tab}"]`).classList.add('active');
+
+    document.getElementById('mediaTab').classList.toggle('hidden', tab !== 'media');
+    document.getElementById('audioTab').classList.toggle('hidden', tab !== 'audio');
+}
+
+// ============ MEDIA LIST ============
+function updateMediaList() {
+    const videoList = document.getElementById('videoList');
+    const audioList = document.getElementById('audioList');
+
+    if (state.videoFile) {
+        videoList.innerHTML = `
+            <div class="media-item">
+                <div class="media-thumb">
+                    <video src="${els.video.src}" muted></video>
+                </div>
+                <div class="media-details">
+                    <div class="media-name">${state.videoFile.name}</div>
+                    <div class="media-meta">${formatFileSize(state.videoFile.size)} • ${formatTimeShort(state.videoDuration)}</div>
+                </div>
+                <button class="media-remove" onclick="removeVideo()">×</button>
+            </div>
+        `;
+    } else {
+        videoList.innerHTML = '';
+    }
+
+    if (state.audioFile) {
+        audioList.innerHTML = `
+            <div class="media-item">
+                <div class="media-thumb">
+                    <div class="media-thumb-icon">🎵</div>
+                </div>
+                <div class="media-details">
+                    <div class="media-name">${state.audioFile.name}</div>
+                    <div class="media-meta">${formatFileSize(state.audioFile.size)} • ${formatTimeShort(state.audioDuration)}</div>
+                </div>
+                <button class="media-remove" onclick="removeAudio()">×</button>
+            </div>
+        `;
+    } else {
+        audioList.innerHTML = '';
+    }
+}
+
+function removeVideo() {
+    state.videoFile = null;
+    state.videoDuration = 0;
+    els.video.src = '';
+    els.video.classList.add('hidden');
+    els.previewEmpty.classList.remove('hidden');
+    els.exportBtn.disabled = true;
+    els.videoTrack.innerHTML = '';
+    updateMediaList();
+    updateTimeline();
+    drawRuler();
+    toast('Video removed');
+}
+
+function removeAudio() {
+    state.audioFile = null;
+    state.audioDuration = 0;
+    state.audioOffset = 0;
+    els.audio.src = '';
+    els.audioTrack.innerHTML = '';
+    document.getElementById('audioOffsetInput').value = 0;
+    updateMediaList();
+    updateTimeline();
+    drawRuler();
+    toast('Audio removed');
+}
+
+// ============ EXPORT ============
+let ffmpeg = null;
+
+function showExportModal() {
+    document.getElementById('exportModal').classList.add('active');
+}
+
+function hideExportModal() {
+    document.getElementById('exportModal').classList.remove('active');
+    document.getElementById('exportProgressContainer').classList.add('hidden');
+}
+
+async function startExport() {
+    const filename = document.getElementById('exportFilename').value || 'video';
+    const format = document.getElementById('exportFormat').value;
+    const quality = document.getElementById('exportQuality').value;
+
+    document.getElementById('exportProgressContainer').classList.remove('hidden');
+    document.getElementById('startExportBtn').disabled = true;
+    updateExportProgress(0, 'Loading FFmpeg...');
+
+    try {
+        // Load FFmpeg
+        if (!ffmpeg) {
+            const { FFmpeg } = FFmpegWASM;
+            const { fetchFile, toBlobURL } = FFmpegUtil;
+
+            ffmpeg = new FFmpeg();
+            ffmpeg.on('progress', ({ progress }) => {
+                updateExportProgress(progress * 100, `Encoding: ${Math.round(progress * 100)}%`);
+            });
+
+            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/esm';
+            await ffmpeg.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+        }
+
+        const { fetchFile } = FFmpegUtil;
+        updateExportProgress(10, 'Preparing files...');
+
+        // Write video
+        const videoExt = state.videoFile.name.split('.').pop();
+        await ffmpeg.writeFile(`input.${videoExt}`, await fetchFile(state.videoFile));
+
+        // Build args
+        let args = ['-i', `input.${videoExt}`];
+
+        // Add audio if present
+        if (state.audioFile) {
+            const audioExt = state.audioFile.name.split('.').pop();
+            await ffmpeg.writeFile(`audio.${audioExt}`, await fetchFile(state.audioFile));
+
+            if (state.audioOffset >= 0) {
+                args.push('-itsoffset', state.audioOffset.toString());
+            }
+            args.push('-i', `audio.${audioExt}`);
+
+            // Mix audio
+            const videoVol = parseFloat(document.getElementById('videoVolumeSlider').value);
+            const audioVol = parseFloat(document.getElementById('audioVolumeSlider').value);
+
+            args.push('-filter_complex',
+                `[0:a]volume=${videoVol}[va];[1:a]volume=${audioVol}[aa];[va][aa]amix=inputs=2:duration=longest[a]`);
+            args.push('-map', '0:v', '-map', '[a]');
+        }
+
+        // Quality
+        const crf = quality === 'high' ? 18 : quality === 'medium' ? 23 : 28;
+
+        // Format specific
+        if (format === 'mp4') {
+            args.push('-c:v', 'libx264', '-preset', 'medium', '-crf', crf.toString(), '-c:a', 'aac');
+        } else {
+            args.push('-c:v', 'libvpx-vp9', '-crf', crf.toString(), '-c:a', 'libopus');
+        }
+
+        args.push('-y', `output.${format}`);
+
+        updateExportProgress(20, 'Encoding...');
+        await ffmpeg.exec(args);
+
+        updateExportProgress(95, 'Finalizing...');
+        const data = await ffmpeg.readFile(`output.${format}`);
+
+        // Download
+        const blob = new Blob([data.buffer], { type: `video/${format}` });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.${format}`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        updateExportProgress(100, 'Complete!');
+        toast('Export complete!', 'success');
+
+        setTimeout(hideExportModal, 1500);
+
+    } catch (err) {
+        console.error(err);
+        updateExportProgress(0, 'Error: ' + err.message);
+        toast('Export failed', 'error');
+    }
+
+    document.getElementById('startExportBtn').disabled = false;
+}
+
+function updateExportProgress(percent, text) {
+    document.getElementById('exportProgressBar').style.width = percent + '%';
+    document.getElementById('exportProgressText').textContent = text;
+}
+
+// ============ PROJECT ============
+function newProject() {
+    if (state.videoFile || state.audioFile) {
+        if (!confirm('Start a new project? Unsaved changes will be lost.')) return;
+    }
+
+    removeVideo();
+    removeAudio();
+    state.currentTime = 0;
+    state.zoom = 1;
+    els.zoomSlider.value = 1;
+    els.zoomValue.textContent = '100%';
+
+    document.getElementById('videoSpeedSlider').value = 1;
+    document.getElementById('videoSpeedValue').textContent = '1.00x';
+    document.getElementById('videoVolumeSlider').value = 0;
+    document.getElementById('videoVolumeValue').textContent = '0%';
+    document.getElementById('audioSpeedSlider').value = 1;
+    document.getElementById('audioSpeedValue').textContent = '1.00x';
+    document.getElementById('audioVolumeSlider').value = 1;
+    document.getElementById('audioVolumeValue').textContent = '100%';
+
+    toast('New project created');
+}
+
+// ============ KEYBOARD ============
+function onKeyDown(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    switch (e.code) {
+        case 'Space':
+            e.preventDefault();
+            togglePlayPause();
+            break;
+        case 'ArrowLeft':
+            e.preventDefault();
+            if (e.shiftKey) seekTo(els.video.currentTime - 5);
+            else stepBackward();
+            break;
+        case 'ArrowRight':
+            e.preventDefault();
+            if (e.shiftKey) seekTo(els.video.currentTime + 5);
+            else stepForward();
+            break;
+        case 'Home':
+            e.preventDefault();
+            seekStart();
+            break;
+        case 'End':
+            e.preventDefault();
+            seekEnd();
+            break;
+        case 'KeyV':
+            selectTool('select');
+            break;
+        case 'KeyS':
+            if (!e.ctrlKey && !e.metaKey) selectTool('cut');
+            break;
+        case 'Delete':
+        case 'Backspace':
+            if (!e.target.closest('input')) {
+                e.preventDefault();
+                deleteSelected();
+            }
+            break;
+    }
+}
+
+// ============ UTILS ============
+function formatTimecode(seconds) {
+    if (!seconds || isNaN(seconds)) return '00:00:00:00';
+
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    const f = Math.floor((seconds % 1) * 30);
+
+    return [h, m, s, f].map(n => n.toString().padStart(2, '0')).join(':');
+}
+
+function formatTimeShort(seconds) {
+    if (!seconds || isNaN(seconds)) return '0:00';
+
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function toast(message, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = message;
+    el.className = 'toast show ' + type;
+    setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ============ START ============
+init();
 </script>
 </body>
 </html>
