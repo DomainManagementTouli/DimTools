@@ -622,11 +622,30 @@
             const saveValue = () => {
                 const newValue = input.value;
                 td.classList.remove('editing');
-                
-                dataRef.once('value').then((snapshot) => {
-                    const data = snapshot.val() || initialData;
-                    data[rowIndex][cellIndex] = newValue;
-                    dataRef.set(data);
+
+                // Input validation - max 200 characters, strip control characters
+                const sanitizedValue = newValue
+                    .substring(0, 200)
+                    .replace(/[\x00-\x1F\x7F]/g, ''); // Remove control characters
+
+                // Use transaction to prevent race conditions with concurrent edits
+                dataRef.transaction((currentData) => {
+                    if (currentData === null) {
+                        // Initialize with default data if not exists
+                        const data = JSON.parse(JSON.stringify(initialData));
+                        data[rowIndex][cellIndex] = sanitizedValue;
+                        return data;
+                    }
+                    // Validate array bounds before writing
+                    if (rowIndex >= 0 && rowIndex < currentData.length &&
+                        cellIndex >= 0 && cellIndex < currentData[rowIndex].length) {
+                        currentData[rowIndex][cellIndex] = sanitizedValue;
+                    }
+                    return currentData;
+                }).catch((error) => {
+                    console.error('Transaction failed:', error);
+                    updateStatus('Save failed - please try again', false);
+                    setTimeout(() => updateStatus('Connected', true), 3000);
                 });
             };
 
