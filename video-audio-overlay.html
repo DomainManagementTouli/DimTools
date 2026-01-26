@@ -1,0 +1,1928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DimTools - Video Audio Overlay Editor</title>
+    <!-- FFmpeg.wasm for video processing -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+    <style>
+        @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Editor Layout - CapCut/YouTube Studio style */
+        .editor-container {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .editor-header {
+            background: #16213e;
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #0f3460;
+            z-index: 100;
+        }
+
+        .editor-title {
+            color: #e94560;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .editor-title span {
+            color: #fff;
+            font-weight: normal;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #e94560, #c91f40);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn-export:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary-dark {
+            background: #0f3460;
+            color: #a4b0be;
+            border: 1px solid #1a4a7a;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary-dark:hover {
+            background: #1a4a7a;
+            color: #fff;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 0;
+            overflow: hidden;
+            background: #1a1a2e;
+        }
+
+        /* Left Panel - Media Library */
+        .media-panel {
+            background: #16213e;
+            border-right: 1px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1rem;
+            border-bottom: 1px solid #0f3460;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .upload-section {
+            padding: 1rem;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .upload-area {
+            background: #0f3460;
+            border: 2px dashed #1a4a7a;
+            border-radius: 8px;
+            padding: 1.25rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 0.75rem;
+        }
+
+        .upload-area:hover {
+            background: #1a4a7a;
+            border-color: #e94560;
+        }
+
+        .upload-area.dragover {
+            background: #1a4a7a;
+            border-color: #e94560;
+            border-style: solid;
+        }
+
+        .upload-area h4 {
+            color: #fff;
+            margin: 0 0 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .upload-area p {
+            color: #a4b0be;
+            font-size: 0.75rem;
+            margin: 0;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .video-icon { color: #e94560; }
+        .audio-icon { color: #4ecdc4; }
+
+        /* Media Items */
+        .media-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+        }
+
+        .media-item {
+            background: #0f3460;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .media-item:hover {
+            background: #1a4a7a;
+        }
+
+        .media-item.active {
+            background: #1a4a7a;
+            border: 1px solid #e94560;
+        }
+
+        .media-thumb {
+            width: 48px;
+            height: 36px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .media-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .media-name {
+            color: #fff;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .media-meta {
+            color: #a4b0be;
+            font-size: 0.7rem;
+            margin-top: 2px;
+        }
+
+        .media-remove {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 0.25rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .media-remove:hover {
+            opacity: 1;
+        }
+
+        /* Center - Preview Area */
+        .preview-panel {
+            display: flex;
+            flex-direction: column;
+            background: #1a1a2e;
+            overflow: hidden;
+        }
+
+        .preview-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            position: relative;
+            min-height: 0;
+        }
+
+        .video-wrapper {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        #videoPreview {
+            max-width: 100%;
+            max-height: 50vh;
+            display: block;
+            background: #000;
+        }
+
+        .preview-placeholder {
+            color: #a4b0be;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .preview-placeholder h3 {
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Playback Controls */
+        .playback-controls {
+            background: #16213e;
+            padding: 1rem;
+            border-top: 1px solid #0f3460;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .play-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e94560, #c91f40);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .control-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background: #0f3460;
+            border: none;
+            color: #a4b0be;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #1a4a7a;
+            color: #fff;
+        }
+
+        .time-display {
+            color: #fff;
+            font-family: monospace;
+            font-size: 0.9rem;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        /* Right Panel - Properties */
+        .properties-panel {
+            background: #16213e;
+            border-left: 1px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .properties-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .property-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .property-label {
+            color: #a4b0be;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .property-input {
+            width: 100%;
+            background: #0f3460;
+            border: 1px solid #1a4a7a;
+            border-radius: 6px;
+            padding: 0.6rem;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .property-input:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .speed-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            background: #0f3460;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e94560;
+            cursor: pointer;
+        }
+
+        .speed-value {
+            color: #fff;
+            font-size: 0.9rem;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .volume-icon {
+            color: #a4b0be;
+            width: 20px;
+        }
+
+        /* Timeline Panel */
+        .timeline-panel {
+            background: #16213e;
+            border-top: 1px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            height: 220px;
+            min-height: 220px;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .timeline-title {
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .zoom-btn {
+            background: #0f3460;
+            border: none;
+            color: #a4b0be;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .zoom-btn:hover {
+            background: #1a4a7a;
+            color: #fff;
+        }
+
+        /* Timeline Ruler */
+        .timeline-ruler {
+            height: 24px;
+            background: #0f3460;
+            position: relative;
+            border-bottom: 1px solid #1a4a7a;
+            overflow: hidden;
+        }
+
+        .ruler-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Timeline Tracks Container */
+        .timeline-tracks-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Track Labels */
+        .track-labels {
+            width: 100px;
+            background: #0f3460;
+            border-right: 1px solid #1a4a7a;
+            flex-shrink: 0;
+        }
+
+        .track-label {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            border-bottom: 1px solid #1a4a7a;
+            color: #fff;
+            font-size: 0.8rem;
+            gap: 0.5rem;
+        }
+
+        .track-label-icon {
+            font-size: 1rem;
+        }
+
+        /* Timeline Tracks */
+        .timeline-tracks {
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+        }
+
+        .tracks-inner {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .track {
+            height: 60px;
+            position: relative;
+            border-bottom: 1px solid #1a4a7a;
+            background: #1a1a2e;
+        }
+
+        .track-video {
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .track-audio {
+            background: rgba(78, 205, 196, 0.1);
+        }
+
+        /* Timeline Clips */
+        .timeline-clip {
+            position: absolute;
+            top: 8px;
+            height: calc(100% - 16px);
+            border-radius: 6px;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            font-size: 0.75rem;
+            color: #fff;
+            user-select: none;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .clip-video {
+            background: linear-gradient(135deg, #e94560, #c91f40);
+            border: 1px solid #e94560;
+        }
+
+        .clip-audio {
+            background: linear-gradient(135deg, #4ecdc4, #26a69a);
+            border: 1px solid #4ecdc4;
+        }
+
+        .clip-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            cursor: ew-resize;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .clip-handle-left {
+            left: 0;
+            border-radius: 6px 0 0 6px;
+        }
+
+        .clip-handle-right {
+            right: 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* Playhead */
+        .playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #fff;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .playhead::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -5px;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 2px;
+            transform: rotate(45deg);
+        }
+
+        /* Export Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal h2 {
+            color: #fff;
+            margin: 0 0 1.5rem 0;
+            font-size: 1.4rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #a4b0be;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .export-options {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .export-progress {
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #0f3460;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #e94560, #c91f40);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            color: #a4b0be;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        /* Status Messages */
+        .status-toast {
+            position: fixed;
+            bottom: 240px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f3460;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 500;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-toast.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        .status-toast.success {
+            background: #155724;
+            border: 1px solid #28a745;
+        }
+
+        .status-toast.error {
+            background: #721c24;
+            border: 1px solid #dc3545;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 46, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #0f3460;
+            border-top-color: #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #fff;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-subtext {
+            color: #a4b0be;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 220px 1fr 220px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+
+            .media-panel, .properties-panel {
+                display: none;
+            }
+
+            .timeline-panel {
+                height: 180px;
+            }
+        }
+
+        /* Hidden file inputs */
+        .hidden-input {
+            display: none;
+        }
+
+        /* Empty state */
+        .empty-track {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4a5568;
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+<script src="nav-box.js"></script>
+
+<div class="editor-container">
+    <!-- Header -->
+    <header class="editor-header">
+        <h1 class="editor-title">DimTools <span>Video Audio Overlay</span></h1>
+        <div class="header-actions">
+            <button class="btn-secondary-dark" onclick="resetProject()">New Project</button>
+            <button class="btn-export" id="exportBtn" onclick="openExportModal()" disabled>
+                <span>Export</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Left Panel - Media Library -->
+        <aside class="media-panel">
+            <div class="panel-header">Media Library</div>
+
+            <div class="upload-section">
+                <div class="upload-area" id="videoUploadArea" onclick="document.getElementById('videoInput').click()">
+                    <div class="upload-icon video-icon">&#9658;</div>
+                    <h4>Upload Video</h4>
+                    <p>MP4, WebM, MOV, AVI, MKV</p>
+                </div>
+                <input type="file" id="videoInput" class="hidden-input" accept="video/*,.mp4,.webm,.mov,.avi,.mkv,.flv,.wmv">
+
+                <div class="upload-area" id="audioUploadArea" onclick="document.getElementById('audioInput').click()">
+                    <div class="upload-icon audio-icon">&#9835;</div>
+                    <h4>Upload Audio</h4>
+                    <p>MP3, WAV, OGG, AAC, FLAC</p>
+                </div>
+                <input type="file" id="audioInput" class="hidden-input" accept="audio/*,.mp3,.wav,.ogg,.aac,.flac,.m4a">
+            </div>
+
+            <div class="media-list" id="mediaList">
+                <div style="color: #a4b0be; text-align: center; padding: 2rem; font-size: 0.85rem;">
+                    Upload media files to get started
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center - Preview -->
+        <main class="preview-panel">
+            <div class="preview-container">
+                <div class="video-wrapper" id="videoWrapper" style="display: none;">
+                    <video id="videoPreview" muted></video>
+                </div>
+                <div class="preview-placeholder" id="previewPlaceholder">
+                    <h3>No Video Loaded</h3>
+                    <p>Upload a video file from the left panel to begin editing</p>
+                </div>
+            </div>
+
+            <!-- Playback Controls -->
+            <div class="playback-controls">
+                <div class="controls-row">
+                    <button class="control-btn tooltip" data-tooltip="Skip Back 5s" onclick="skipTime(-5)">&#9668;&#9668;</button>
+                    <button class="control-btn tooltip" data-tooltip="Previous Frame" onclick="skipTime(-0.04)">&#9668;</button>
+                    <button class="play-btn" id="playBtn" onclick="togglePlayPause()">&#9658;</button>
+                    <button class="control-btn tooltip" data-tooltip="Next Frame" onclick="skipTime(0.04)">&#9658;</button>
+                    <button class="control-btn tooltip" data-tooltip="Skip Forward 5s" onclick="skipTime(5)">&#9658;&#9658;</button>
+                </div>
+                <div class="controls-row">
+                    <span class="time-display" id="timeDisplay">00:00.00 / 00:00.00</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel - Properties -->
+        <aside class="properties-panel">
+            <div class="panel-header">Properties</div>
+
+            <div class="properties-content">
+                <!-- Video Properties -->
+                <div id="videoProperties">
+                    <div class="property-group">
+                        <label class="property-label">Video Speed</label>
+                        <div class="speed-control">
+                            <input type="range" class="speed-slider" id="videoSpeedSlider" min="0.25" max="4" step="0.05" value="1" oninput="updateVideoSpeed(this.value)">
+                            <span class="speed-value" id="videoSpeedValue">1.00x</span>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Video Volume</label>
+                        <div class="volume-control">
+                            <span class="volume-icon">&#128266;</span>
+                            <input type="range" class="speed-slider" id="videoVolumeSlider" min="0" max="1" step="0.01" value="0" oninput="updateVideoVolume(this.value)">
+                            <span class="speed-value" id="videoVolumeValue">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Properties -->
+                <div id="audioProperties">
+                    <div class="property-group">
+                        <label class="property-label">Audio Speed</label>
+                        <div class="speed-control">
+                            <input type="range" class="speed-slider" id="audioSpeedSlider" min="0.25" max="4" step="0.05" value="1" oninput="updateAudioSpeed(this.value)">
+                            <span class="speed-value" id="audioSpeedValue">1.00x</span>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Audio Volume</label>
+                        <div class="volume-control">
+                            <span class="volume-icon">&#128266;</span>
+                            <input type="range" class="speed-slider" id="audioVolumeSlider" min="0" max="1" step="0.01" value="1" oninput="updateAudioVolume(this.value)">
+                            <span class="speed-value" id="audioVolumeValue">100%</span>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Audio Offset (seconds)</label>
+                        <input type="number" class="property-input" id="audioOffsetInput" value="0" step="0.1" onchange="updateAudioOffset(this.value)">
+                        <p style="color: #a4b0be; font-size: 0.7rem; margin-top: 0.25rem;">
+                            Positive = delay audio, Negative = start earlier
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Export Settings -->
+                <div class="property-group" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #0f3460;">
+                    <label class="property-label">Output Format</label>
+                    <select class="property-input" id="outputFormat">
+                        <option value="mp4">MP4 (H.264)</option>
+                        <option value="webm">WebM (VP9)</option>
+                        <option value="mov">MOV (QuickTime)</option>
+                    </select>
+                </div>
+
+                <div class="property-group">
+                    <label class="property-label">Output Quality</label>
+                    <select class="property-input" id="outputQuality">
+                        <option value="high">High (Original)</option>
+                        <option value="medium" selected>Medium (720p)</option>
+                        <option value="low">Low (480p)</option>
+                    </select>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-panel">
+        <div class="timeline-header">
+            <span class="timeline-title">Timeline</span>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomTimeline(-1)">-</button>
+                <span style="color: #a4b0be; font-size: 0.8rem;" id="zoomLevel">100%</span>
+                <button class="zoom-btn" onclick="zoomTimeline(1)">+</button>
+            </div>
+        </div>
+
+        <div class="timeline-ruler" id="timelineRuler" onclick="seekToPosition(event)">
+            <canvas class="ruler-canvas" id="rulerCanvas"></canvas>
+        </div>
+
+        <div class="timeline-tracks-container">
+            <div class="track-labels">
+                <div class="track-label">
+                    <span class="track-label-icon video-icon">&#9658;</span>
+                    Video
+                </div>
+                <div class="track-label">
+                    <span class="track-label-icon audio-icon">&#9835;</span>
+                    Audio
+                </div>
+            </div>
+
+            <div class="timeline-tracks" id="timelineTracks">
+                <div class="tracks-inner" id="tracksInner">
+                    <div class="track track-video" id="videoTrack">
+                        <span class="empty-track" id="videoTrackEmpty">Drop video here</span>
+                    </div>
+                    <div class="track track-audio" id="audioTrack">
+                        <span class="empty-track" id="audioTrackEmpty">Drop audio here</span>
+                    </div>
+                    <div class="playhead" id="playhead" style="left: 0;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-overlay" id="exportModal">
+    <div class="modal" style="position: relative;">
+        <button class="modal-close" onclick="closeExportModal()">&times;</button>
+        <h2>Export Video</h2>
+
+        <div class="export-options">
+            <div class="property-group">
+                <label class="property-label">Filename</label>
+                <input type="text" class="property-input" id="exportFilename" value="my-video">
+            </div>
+        </div>
+
+        <button class="btn-export" style="width: 100%;" id="startExportBtn" onclick="startExport()">
+            Start Export
+        </button>
+
+        <div class="export-progress" id="exportProgress" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <p class="progress-text" id="progressText">Initializing...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <p class="loading-text" id="loadingText">Processing...</p>
+    <p class="loading-subtext" id="loadingSubtext">This may take a moment</p>
+</div>
+
+<!-- Status Toast -->
+<div class="status-toast" id="statusToast"></div>
+
+<!-- Hidden Audio Element -->
+<audio id="audioPlayer" style="display: none;"></audio>
+
+<script>
+    // State
+    let videoFile = null;
+    let audioFile = null;
+    let videoElement = document.getElementById('videoPreview');
+    let audioElement = document.getElementById('audioPlayer');
+    let isPlaying = false;
+    let timelineZoom = 1;
+    let audioOffset = 0;
+    let pixelsPerSecond = 50;
+    let ffmpeg = null;
+    let ffmpegLoaded = false;
+
+    // DOM Elements
+    const videoInput = document.getElementById('videoInput');
+    const audioInput = document.getElementById('audioInput');
+    const playBtn = document.getElementById('playBtn');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const playhead = document.getElementById('playhead');
+    const videoTrack = document.getElementById('videoTrack');
+    const audioTrack = document.getElementById('audioTrack');
+    const tracksInner = document.getElementById('tracksInner');
+    const rulerCanvas = document.getElementById('rulerCanvas');
+    const exportBtn = document.getElementById('exportBtn');
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', initEditor);
+
+    function initEditor() {
+        setupEventListeners();
+        drawRuler();
+        resizeRuler();
+        window.addEventListener('resize', resizeRuler);
+    }
+
+    function setupEventListeners() {
+        // Video input
+        videoInput.addEventListener('change', handleVideoUpload);
+
+        // Audio input
+        audioInput.addEventListener('change', handleAudioUpload);
+
+        // Video time update
+        videoElement.addEventListener('timeupdate', updateTimeDisplay);
+        videoElement.addEventListener('loadedmetadata', onVideoLoaded);
+        videoElement.addEventListener('ended', onMediaEnded);
+
+        // Audio time update
+        audioElement.addEventListener('ended', onMediaEnded);
+
+        // Drag and drop for upload areas
+        setupDragDrop('videoUploadArea', handleVideoFiles);
+        setupDragDrop('audioUploadArea', handleAudioFiles);
+    }
+
+    function setupDragDrop(elementId, handler) {
+        const element = document.getElementById(elementId);
+
+        element.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            element.classList.add('dragover');
+        });
+
+        element.addEventListener('dragleave', () => {
+            element.classList.remove('dragover');
+        });
+
+        element.addEventListener('drop', (e) => {
+            e.preventDefault();
+            element.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handler(e.dataTransfer.files);
+            }
+        });
+    }
+
+    // Handle video upload
+    function handleVideoUpload(e) {
+        if (e.target.files.length > 0) {
+            handleVideoFiles(e.target.files);
+        }
+    }
+
+    function handleVideoFiles(files) {
+        const file = files[0];
+        if (!file.type.startsWith('video/') && !isVideoExtension(file.name)) {
+            showToast('Please upload a valid video file', 'error');
+            return;
+        }
+
+        videoFile = file;
+        const url = URL.createObjectURL(file);
+        videoElement.src = url;
+
+        document.getElementById('videoWrapper').style.display = 'block';
+        document.getElementById('previewPlaceholder').style.display = 'none';
+
+        updateMediaList();
+        showToast('Video loaded successfully', 'success');
+    }
+
+    function isVideoExtension(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        return ['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'm4v'].includes(ext);
+    }
+
+    // Handle audio upload
+    function handleAudioUpload(e) {
+        if (e.target.files.length > 0) {
+            handleAudioFiles(e.target.files);
+        }
+    }
+
+    function handleAudioFiles(files) {
+        const file = files[0];
+        if (!file.type.startsWith('audio/') && !isAudioExtension(file.name)) {
+            showToast('Please upload a valid audio file', 'error');
+            return;
+        }
+
+        audioFile = file;
+        const url = URL.createObjectURL(file);
+        audioElement.src = url;
+
+        audioElement.addEventListener('loadedmetadata', () => {
+            updateAudioClip();
+            updateMediaList();
+        }, { once: true });
+
+        showToast('Audio loaded successfully', 'success');
+    }
+
+    function isAudioExtension(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        return ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'wma'].includes(ext);
+    }
+
+    // Video loaded callback
+    function onVideoLoaded() {
+        updateTimeDisplay();
+        updateVideoClip();
+        checkExportReady();
+        drawRuler();
+    }
+
+    // Update video clip on timeline
+    function updateVideoClip() {
+        const duration = videoElement.duration || 0;
+        const width = duration * pixelsPerSecond * timelineZoom;
+
+        // Remove existing clip
+        const existing = videoTrack.querySelector('.timeline-clip');
+        if (existing) existing.remove();
+
+        document.getElementById('videoTrackEmpty').style.display = 'none';
+
+        const clip = document.createElement('div');
+        clip.className = 'timeline-clip clip-video';
+        clip.style.left = '0px';
+        clip.style.width = width + 'px';
+        clip.innerHTML = `
+            <div class="clip-handle clip-handle-left"></div>
+            ${videoFile ? videoFile.name : 'Video'}
+            <div class="clip-handle clip-handle-right"></div>
+        `;
+
+        videoTrack.appendChild(clip);
+        updateTracksWidth();
+    }
+
+    // Update audio clip on timeline
+    function updateAudioClip() {
+        const duration = audioElement.duration || 0;
+        const width = duration * pixelsPerSecond * timelineZoom;
+        const left = audioOffset * pixelsPerSecond * timelineZoom;
+
+        // Remove existing clip
+        const existing = audioTrack.querySelector('.timeline-clip');
+        if (existing) existing.remove();
+
+        document.getElementById('audioTrackEmpty').style.display = 'none';
+
+        const clip = document.createElement('div');
+        clip.className = 'timeline-clip clip-audio';
+        clip.style.left = Math.max(0, left) + 'px';
+        clip.style.width = width + 'px';
+        clip.innerHTML = `
+            <div class="clip-handle clip-handle-left"></div>
+            ${audioFile ? audioFile.name : 'Audio'}
+            <div class="clip-handle clip-handle-right"></div>
+        `;
+
+        // Make draggable
+        makeDraggable(clip, 'audio');
+
+        audioTrack.appendChild(clip);
+        updateTracksWidth();
+        checkExportReady();
+    }
+
+    // Make clip draggable
+    function makeDraggable(clip, type) {
+        let isDragging = false;
+        let startX = 0;
+        let startLeft = 0;
+
+        clip.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('clip-handle')) return;
+            isDragging = true;
+            startX = e.clientX;
+            startLeft = parseInt(clip.style.left) || 0;
+            clip.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const newLeft = Math.max(0, startLeft + dx);
+            clip.style.left = newLeft + 'px';
+
+            if (type === 'audio') {
+                audioOffset = newLeft / (pixelsPerSecond * timelineZoom);
+                document.getElementById('audioOffsetInput').value = audioOffset.toFixed(2);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            clip.style.cursor = 'move';
+        });
+    }
+
+    // Update tracks container width
+    function updateTracksWidth() {
+        const videoDuration = videoElement.duration || 0;
+        const audioDuration = (audioElement.duration || 0) + audioOffset;
+        const maxDuration = Math.max(videoDuration, audioDuration, 60);
+        const width = maxDuration * pixelsPerSecond * timelineZoom;
+
+        tracksInner.style.width = width + 'px';
+    }
+
+    // Update media list
+    function updateMediaList() {
+        const mediaList = document.getElementById('mediaList');
+        let html = '';
+
+        if (videoFile) {
+            html += `
+                <div class="media-item active">
+                    <div class="media-thumb video-icon">&#9658;</div>
+                    <div class="media-info">
+                        <div class="media-name">${videoFile.name}</div>
+                        <div class="media-meta">${formatFileSize(videoFile.size)}</div>
+                    </div>
+                    <button class="media-remove" onclick="removeVideo()">&times;</button>
+                </div>
+            `;
+        }
+
+        if (audioFile) {
+            html += `
+                <div class="media-item">
+                    <div class="media-thumb audio-icon">&#9835;</div>
+                    <div class="media-info">
+                        <div class="media-name">${audioFile.name}</div>
+                        <div class="media-meta">${formatFileSize(audioFile.size)}</div>
+                    </div>
+                    <button class="media-remove" onclick="removeAudio()">&times;</button>
+                </div>
+            `;
+        }
+
+        if (!videoFile && !audioFile) {
+            html = '<div style="color: #a4b0be; text-align: center; padding: 2rem; font-size: 0.85rem;">Upload media files to get started</div>';
+        }
+
+        mediaList.innerHTML = html;
+    }
+
+    // Remove video
+    function removeVideo() {
+        videoFile = null;
+        videoElement.src = '';
+        document.getElementById('videoWrapper').style.display = 'none';
+        document.getElementById('previewPlaceholder').style.display = 'block';
+
+        const clip = videoTrack.querySelector('.timeline-clip');
+        if (clip) clip.remove();
+        document.getElementById('videoTrackEmpty').style.display = 'block';
+
+        updateMediaList();
+        checkExportReady();
+        showToast('Video removed', 'success');
+    }
+
+    // Remove audio
+    function removeAudio() {
+        audioFile = null;
+        audioElement.src = '';
+
+        const clip = audioTrack.querySelector('.timeline-clip');
+        if (clip) clip.remove();
+        document.getElementById('audioTrackEmpty').style.display = 'block';
+
+        updateMediaList();
+        checkExportReady();
+        showToast('Audio removed', 'success');
+    }
+
+    // Playback controls
+    function togglePlayPause() {
+        if (isPlaying) {
+            pauseMedia();
+        } else {
+            playMedia();
+        }
+    }
+
+    function playMedia() {
+        if (!videoFile) {
+            showToast('Please upload a video first', 'error');
+            return;
+        }
+
+        isPlaying = true;
+        playBtn.innerHTML = '&#10074;&#10074;';
+
+        videoElement.play();
+
+        // Sync audio with offset
+        if (audioFile) {
+            const videoTime = videoElement.currentTime;
+            const audioTime = videoTime - audioOffset;
+
+            if (audioTime >= 0 && audioTime < audioElement.duration) {
+                audioElement.currentTime = audioTime;
+                audioElement.play();
+            } else if (audioTime < 0) {
+                // Schedule audio to start later
+                setTimeout(() => {
+                    if (isPlaying) {
+                        audioElement.currentTime = 0;
+                        audioElement.play();
+                    }
+                }, Math.abs(audioTime) * 1000 / videoElement.playbackRate);
+            }
+        }
+    }
+
+    function pauseMedia() {
+        isPlaying = false;
+        playBtn.innerHTML = '&#9658;';
+        videoElement.pause();
+        audioElement.pause();
+    }
+
+    function onMediaEnded() {
+        pauseMedia();
+        videoElement.currentTime = 0;
+        audioElement.currentTime = 0;
+    }
+
+    function skipTime(seconds) {
+        if (!videoFile) return;
+
+        const newTime = Math.max(0, Math.min(videoElement.duration, videoElement.currentTime + seconds));
+        videoElement.currentTime = newTime;
+
+        // Sync audio
+        if (audioFile) {
+            const audioTime = newTime - audioOffset;
+            if (audioTime >= 0 && audioTime < audioElement.duration) {
+                audioElement.currentTime = audioTime;
+            }
+        }
+
+        updateTimeDisplay();
+    }
+
+    // Time display update
+    function updateTimeDisplay() {
+        const current = videoElement.currentTime || 0;
+        const duration = videoElement.duration || 0;
+
+        timeDisplay.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+
+        // Update playhead
+        const left = current * pixelsPerSecond * timelineZoom;
+        playhead.style.left = left + 'px';
+
+        // Sync audio during playback
+        if (isPlaying && audioFile) {
+            const expectedAudioTime = current - audioOffset;
+            const actualAudioTime = audioElement.currentTime;
+
+            // If audio hasn't started yet
+            if (expectedAudioTime < 0) {
+                audioElement.pause();
+            } else if (expectedAudioTime >= 0 && expectedAudioTime < audioElement.duration) {
+                // Sync if drift is too large
+                if (Math.abs(expectedAudioTime - actualAudioTime) > 0.3) {
+                    audioElement.currentTime = expectedAudioTime;
+                }
+                if (audioElement.paused) {
+                    audioElement.play();
+                }
+            }
+        }
+    }
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 100);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+    }
+
+    // Speed controls
+    function updateVideoSpeed(value) {
+        videoElement.playbackRate = parseFloat(value);
+        document.getElementById('videoSpeedValue').textContent = parseFloat(value).toFixed(2) + 'x';
+    }
+
+    function updateAudioSpeed(value) {
+        audioElement.playbackRate = parseFloat(value);
+        document.getElementById('audioSpeedValue').textContent = parseFloat(value).toFixed(2) + 'x';
+    }
+
+    function updateVideoVolume(value) {
+        videoElement.volume = parseFloat(value);
+        videoElement.muted = value == 0;
+        document.getElementById('videoVolumeValue').textContent = Math.round(value * 100) + '%';
+    }
+
+    function updateAudioVolume(value) {
+        audioElement.volume = parseFloat(value);
+        document.getElementById('audioVolumeValue').textContent = Math.round(value * 100) + '%';
+    }
+
+    function updateAudioOffset(value) {
+        audioOffset = parseFloat(value) || 0;
+        updateAudioClip();
+        drawRuler();
+    }
+
+    // Timeline zoom
+    function zoomTimeline(direction) {
+        if (direction > 0) {
+            timelineZoom = Math.min(4, timelineZoom * 1.25);
+        } else {
+            timelineZoom = Math.max(0.25, timelineZoom / 1.25);
+        }
+
+        document.getElementById('zoomLevel').textContent = Math.round(timelineZoom * 100) + '%';
+        pixelsPerSecond = 50 * timelineZoom;
+
+        updateVideoClip();
+        if (audioFile) updateAudioClip();
+        drawRuler();
+        updateTimeDisplay();
+    }
+
+    // Seek to position on ruler click
+    function seekToPosition(e) {
+        if (!videoFile) return;
+
+        const rect = e.target.getBoundingClientRect();
+        const x = e.clientX - rect.left + document.getElementById('timelineTracks').scrollLeft;
+        const time = x / (pixelsPerSecond * timelineZoom);
+
+        videoElement.currentTime = Math.max(0, Math.min(videoElement.duration, time));
+
+        if (audioFile) {
+            const audioTime = time - audioOffset;
+            if (audioTime >= 0 && audioTime < audioElement.duration) {
+                audioElement.currentTime = audioTime;
+            }
+        }
+
+        updateTimeDisplay();
+    }
+
+    // Draw ruler
+    function resizeRuler() {
+        const container = document.getElementById('timelineRuler');
+        rulerCanvas.width = container.offsetWidth;
+        rulerCanvas.height = container.offsetHeight;
+        drawRuler();
+    }
+
+    function drawRuler() {
+        const ctx = rulerCanvas.getContext('2d');
+        const width = rulerCanvas.width;
+        const height = rulerCanvas.height;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#0f3460';
+        ctx.fillRect(0, 0, width, height);
+
+        const duration = Math.max(videoElement.duration || 60, (audioElement.duration || 0) + audioOffset, 60);
+        const totalWidth = duration * pixelsPerSecond * timelineZoom;
+        const scrollLeft = document.getElementById('timelineTracks').scrollLeft;
+
+        ctx.strokeStyle = '#1a4a7a';
+        ctx.fillStyle = '#a4b0be';
+        ctx.font = '10px sans-serif';
+
+        // Calculate interval based on zoom
+        let interval = 1;
+        if (timelineZoom < 0.5) interval = 5;
+        if (timelineZoom < 0.25) interval = 10;
+        if (timelineZoom > 2) interval = 0.5;
+
+        for (let t = 0; t <= duration; t += interval) {
+            const x = t * pixelsPerSecond * timelineZoom - scrollLeft;
+
+            if (x < -50 || x > width + 50) continue;
+
+            ctx.beginPath();
+            ctx.moveTo(x, height);
+
+            if (t % (interval * 5) === 0 || interval >= 5) {
+                ctx.lineTo(x, height - 12);
+                ctx.fillText(formatTimeShort(t), x + 3, 12);
+            } else {
+                ctx.lineTo(x, height - 6);
+            }
+
+            ctx.stroke();
+        }
+    }
+
+    function formatTimeShort(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Scroll sync for ruler
+    document.getElementById('timelineTracks').addEventListener('scroll', drawRuler);
+
+    // Check if ready to export
+    function checkExportReady() {
+        exportBtn.disabled = !videoFile;
+    }
+
+    // Export modal
+    function openExportModal() {
+        if (!videoFile) {
+            showToast('Please upload a video first', 'error');
+            return;
+        }
+        document.getElementById('exportModal').classList.add('active');
+    }
+
+    function closeExportModal() {
+        document.getElementById('exportModal').classList.remove('active');
+    }
+
+    // Load FFmpeg
+    async function loadFFmpeg() {
+        if (ffmpegLoaded) return true;
+
+        try {
+            const { FFmpeg } = FFmpegWASM;
+            const { fetchFile, toBlobURL } = FFmpegUtil;
+
+            ffmpeg = new FFmpeg();
+
+            ffmpeg.on('progress', ({ progress }) => {
+                const percent = Math.round(progress * 100);
+                document.getElementById('progressFill').style.width = percent + '%';
+                document.getElementById('progressText').textContent = `Processing: ${percent}%`;
+            });
+
+            ffmpeg.on('log', ({ message }) => {
+                console.log(message);
+            });
+
+            // Load FFmpeg core
+            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/esm';
+            await ffmpeg.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+
+            ffmpegLoaded = true;
+            return true;
+        } catch (error) {
+            console.error('Failed to load FFmpeg:', error);
+            return false;
+        }
+    }
+
+    // Start export
+    async function startExport() {
+        const filename = document.getElementById('exportFilename').value || 'my-video';
+        const format = document.getElementById('outputFormat').value;
+        const quality = document.getElementById('outputQuality').value;
+
+        document.getElementById('exportProgress').style.display = 'block';
+        document.getElementById('startExportBtn').disabled = true;
+        document.getElementById('progressText').textContent = 'Loading FFmpeg...';
+        document.getElementById('progressFill').style.width = '0%';
+
+        try {
+            const loaded = await loadFFmpeg();
+            if (!loaded) {
+                throw new Error('Failed to load FFmpeg. Please try again.');
+            }
+
+            const { fetchFile } = FFmpegUtil;
+
+            document.getElementById('progressText').textContent = 'Preparing files...';
+
+            // Get file extension
+            const videoExt = videoFile.name.split('.').pop();
+            const inputVideo = `input.${videoExt}`;
+
+            // Write video file
+            await ffmpeg.writeFile(inputVideo, await fetchFile(videoFile));
+
+            // Build FFmpeg command
+            let outputFile = `output.${format}`;
+            let ffmpegArgs = ['-i', inputVideo];
+
+            // Handle video speed
+            const videoSpeed = parseFloat(document.getElementById('videoSpeedSlider').value);
+            const videoVolume = parseFloat(document.getElementById('videoVolumeSlider').value);
+
+            // Filter complex for video speed
+            let videoFilters = [];
+            let audioFilters = [];
+
+            if (videoSpeed !== 1) {
+                videoFilters.push(`setpts=${1/videoSpeed}*PTS`);
+            }
+
+            // Handle audio overlay
+            if (audioFile) {
+                const audioExt = audioFile.name.split('.').pop();
+                const inputAudio = `audio.${audioExt}`;
+                await ffmpeg.writeFile(inputAudio, await fetchFile(audioFile));
+
+                const audioSpeed = parseFloat(document.getElementById('audioSpeedSlider').value);
+                const audioVolume = parseFloat(document.getElementById('audioVolumeSlider').value);
+
+                // Add audio input with offset
+                if (audioOffset >= 0) {
+                    ffmpegArgs.push('-itsoffset', audioOffset.toString(), '-i', inputAudio);
+                } else {
+                    ffmpegArgs.push('-ss', Math.abs(audioOffset).toString(), '-i', inputAudio);
+                }
+
+                // Build filter complex
+                let filterComplex = '';
+
+                // Video filter
+                if (videoFilters.length > 0) {
+                    filterComplex += `[0:v]${videoFilters.join(',')}[vout];`;
+                } else {
+                    filterComplex += '[0:v]copy[vout];';
+                }
+
+                // Original video audio (if keeping any)
+                if (videoVolume > 0) {
+                    let vAudioFilter = `volume=${videoVolume}`;
+                    if (videoSpeed !== 1) {
+                        vAudioFilter += `,atempo=${videoSpeed}`;
+                    }
+                    filterComplex += `[0:a]${vAudioFilter}[vaudio];`;
+                }
+
+                // Overlay audio
+                let oAudioFilter = `volume=${audioVolume}`;
+                if (audioSpeed !== 1) {
+                    oAudioFilter += `,atempo=${audioSpeed}`;
+                }
+                filterComplex += `[1:a]${oAudioFilter}[oaudio];`;
+
+                // Mix audio
+                if (videoVolume > 0) {
+                    filterComplex += '[vaudio][oaudio]amix=inputs=2:duration=longest[aout]';
+                } else {
+                    filterComplex += '[oaudio]acopy[aout]';
+                }
+
+                ffmpegArgs.push('-filter_complex', filterComplex);
+                ffmpegArgs.push('-map', '[vout]', '-map', '[aout]');
+            } else {
+                // No audio overlay, just process video
+                if (videoFilters.length > 0) {
+                    ffmpegArgs.push('-vf', videoFilters.join(','));
+                }
+
+                if (videoSpeed !== 1) {
+                    ffmpegArgs.push('-af', `atempo=${videoSpeed}`);
+                }
+
+                if (videoVolume !== 1) {
+                    ffmpegArgs.push('-af', `volume=${videoVolume}`);
+                }
+            }
+
+            // Quality settings
+            if (quality === 'high') {
+                ffmpegArgs.push('-crf', '18');
+            } else if (quality === 'medium') {
+                ffmpegArgs.push('-vf', 'scale=-2:720', '-crf', '23');
+            } else {
+                ffmpegArgs.push('-vf', 'scale=-2:480', '-crf', '28');
+            }
+
+            // Format-specific settings
+            if (format === 'mp4') {
+                ffmpegArgs.push('-c:v', 'libx264', '-c:a', 'aac');
+            } else if (format === 'webm') {
+                ffmpegArgs.push('-c:v', 'libvpx-vp9', '-c:a', 'libopus');
+            } else if (format === 'mov') {
+                ffmpegArgs.push('-c:v', 'libx264', '-c:a', 'aac');
+            }
+
+            ffmpegArgs.push('-y', outputFile);
+
+            document.getElementById('progressText').textContent = 'Processing video...';
+
+            // Run FFmpeg
+            await ffmpeg.exec(ffmpegArgs);
+
+            // Read output file
+            const data = await ffmpeg.readFile(outputFile);
+
+            // Create download
+            const mimeTypes = {
+                'mp4': 'video/mp4',
+                'webm': 'video/webm',
+                'mov': 'video/quicktime'
+            };
+
+            const blob = new Blob([data.buffer], { type: mimeTypes[format] });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${filename}.${format}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            document.getElementById('progressText').textContent = 'Export complete!';
+            document.getElementById('progressFill').style.width = '100%';
+
+            showToast('Video exported successfully!', 'success');
+
+            setTimeout(() => {
+                closeExportModal();
+                document.getElementById('exportProgress').style.display = 'none';
+                document.getElementById('startExportBtn').disabled = false;
+            }, 1500);
+
+        } catch (error) {
+            console.error('Export error:', error);
+            document.getElementById('progressText').textContent = 'Export failed: ' + error.message;
+            document.getElementById('startExportBtn').disabled = false;
+            showToast('Export failed: ' + error.message, 'error');
+        }
+    }
+
+    // Reset project
+    function resetProject() {
+        if (videoFile || audioFile) {
+            if (!confirm('Are you sure you want to start a new project? All unsaved work will be lost.')) {
+                return;
+            }
+        }
+
+        removeVideo();
+        removeAudio();
+
+        document.getElementById('videoSpeedSlider').value = 1;
+        document.getElementById('videoSpeedValue').textContent = '1.00x';
+        document.getElementById('audioSpeedSlider').value = 1;
+        document.getElementById('audioSpeedValue').textContent = '1.00x';
+        document.getElementById('videoVolumeSlider').value = 0;
+        document.getElementById('videoVolumeValue').textContent = '0%';
+        document.getElementById('audioVolumeSlider').value = 1;
+        document.getElementById('audioVolumeValue').textContent = '100%';
+        document.getElementById('audioOffsetInput').value = 0;
+
+        audioOffset = 0;
+        timelineZoom = 1;
+        document.getElementById('zoomLevel').textContent = '100%';
+
+        showToast('New project started', 'success');
+    }
+
+    // Toast notification
+    function showToast(message, type = '') {
+        const toast = document.getElementById('statusToast');
+        toast.textContent = message;
+        toast.className = 'status-toast show ' + type;
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // Utility functions
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Ignore if typing in input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        switch(e.code) {
+            case 'Space':
+                e.preventDefault();
+                togglePlayPause();
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                skipTime(e.shiftKey ? -5 : -1);
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                skipTime(e.shiftKey ? 5 : 1);
+                break;
+            case 'Home':
+                e.preventDefault();
+                videoElement.currentTime = 0;
+                updateTimeDisplay();
+                break;
+            case 'End':
+                e.preventDefault();
+                videoElement.currentTime = videoElement.duration;
+                updateTimeDisplay();
+                break;
+        }
+    });
+</script>
+</body>
+</html>
