@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>DimTools - Menu Tally & Noteboard</title>
+    <link rel="icon" href="favicon.ico">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
+
+        li:has(~ .current)::after {
+            content: "/";
+            margin-inline-start: 10px;
+        }
+        li:has(~ li:not(a))::after {
+            content: "/";
+            margin-inline-start: 10px;
+        }
+
+        body {
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+            background-color: #f6eee3;
+            background-size: 20px 20px;
+            background-image: repeating-linear-gradient(0deg, #e5decf, #e5decf 1px, #f6eee3 1px, #f6eee3);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        ul {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        ul li::before {
+            content: "";
+        }
+
+        /* Login styles */
+        .login-container {
+            max-width: 400px;
+            margin: 80px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            padding: 40px;
+            border: 2px solid #8b4513;
+        }
+        .login-container h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            color: #8b4513;
+            text-align: center;
+        }
+        .login-container p {
+            color: #6c757d;
+            margin-bottom: 24px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .login-form label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #8b4513;
+            margin-bottom: 5px;
+        }
+        .login-form input {
+            padding: 10px 12px;
+            border: 2px solid #d2b48c;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .login-form input:focus {
+            outline: none;
+            border-color: #8b4513;
+        }
+        .login-form button {
+            padding: 12px;
+            background: #8b4513;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .login-form button:hover {
+            background: #a0522d;
+        }
+        .login-form button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            display: none;
+            margin-bottom: 10px;
+        }
+        .message.show { display: block; }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Main app container */
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .container.show {
+            display: flex;
+        }
+
+        /* Header bar */
+        .app-header {
+            background: white;
+            border: 2px solid #8b4513;
+            border-radius: 8px;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .app-header h1 {
+            font-size: 20px;
+            color: #8b4513;
+            margin: 0;
+        }
+        .app-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #666;
+        }
+        .logout-btn {
+            background: #d2691e;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 5px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover {
+            background: #a0522d;
+        }
+
+        /* Section card */
+        .section-card {
+            background: white;
+            border-radius: 5px;
+            border: 2px solid #8b4513;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .section-title {
+            background: #8b4513;
+            color: white;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+        }
+        .section-body {
+            padding: 20px;
+        }
+
+        /* Upload area */
+        .upload-area {
+            border: 2px dashed #8b4513;
+            border-radius: 5px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #faf6f0;
+        }
+        .upload-area:hover {
+            background: #f0e6d6;
+            border-color: #a0522d;
+        }
+        .upload-area.dragover {
+            background: #f0e6d6;
+            border-style: solid;
+        }
+        .upload-area h3 {
+            margin: 0 0 6px;
+            color: #8b4513;
+        }
+        .upload-area p {
+            margin: 0;
+            color: #666;
+            font-size: 13px;
+        }
+
+        /* Upload status */
+        .upload-status {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #666;
+            display: none;
+        }
+        .upload-status.show { display: block; }
+        .upload-status.success { color: #155724; }
+        .upload-status.error { color: #721c24; }
+
+        /* View menu tally button */
+        .view-tally-btn {
+            display: none;
+            width: 100%;
+            padding: 14px;
+            background: #8b4513;
+            color: white;
+            border: 2px solid #6b3410;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 14px;
+            text-align: center;
+        }
+        .view-tally-btn.show { display: block; }
+        .view-tally-btn:hover {
+            background: #a0522d;
+        }
+
+        /* PDF viewer */
+        .pdf-viewer {
+            display: none;
+            margin-top: 16px;
+        }
+        .pdf-viewer.show { display: block; }
+        .pdf-viewer-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f6eee3;
+            padding: 8px 14px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #8b4513;
+        }
+        .pdf-viewer-toolbar button {
+            background: #d2691e;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .pdf-viewer-toolbar button:hover {
+            background: #a0522d;
+        }
+        .pdf-pages-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #e9e0d4;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .pdf-pages-container canvas {
+            max-width: 100%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            background: white;
+        }
+
+        /* Noteboard */
+        .noteboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .noteboard-item {
+            background: #faf6f0;
+            border: 1px solid #d2b48c;
+            border-left: 4px solid #d2691e;
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-size: 14px;
+            color: #333;
+            word-break: break-word;
+        }
+        .noteboard-item .note-meta {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .noteboard-item .note-delete {
+            float: right;
+            background: none;
+            border: none;
+            color: #c0392b;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 4px;
+            opacity: 0.6;
+        }
+        .noteboard-item .note-delete:hover { opacity: 1; }
+        .noteboard-input-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .noteboard-input-row textarea {
+            flex: 1;
+            border: 2px solid #d2b48c;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 44px;
+            max-height: 100px;
+            transition: border-color 0.2s;
+        }
+        .noteboard-input-row textarea:focus {
+            outline: none;
+            border-color: #8b4513;
+        }
+        .noteboard-input-row button {
+            background: #8b4513;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .noteboard-input-row button:hover { background: #a0522d; }
+        .noteboard-input-row button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .char-count {
+            font-size: 11px;
+            color: #999;
+            text-align: right;
+            margin-top: 4px;
+        }
+        .char-count.over { color: #c0392b; }
+        .no-notes {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* Loading spinner */
+        .spinner-small {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #8b4513;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            .app-header-right {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+            .logout-btn { width: 100%; text-align: center; }
+            .noteboard-input-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<script src="nav-box.js"></script>
+
+<!-- Login Screen -->
+<div class="login-container" id="loginContainer">
+    <h1>Menu Tally & Noteboard</h1>
+    <p>Sign in to access uploads and notes</p>
+    <div class="message" id="loginMessage"></div>
+    <form class="login-form" id="loginForm">
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="loginBtn">Sign In</button>
+    </form>
+</div>
+
+<!-- Main Application -->
+<div class="container" id="mainContainer">
+    <div class="app-header">
+        <h1>Menu Tally & Noteboard</h1>
+        <div class="app-header-right">
+            <span id="userEmail"></span>
+            <button class="logout-btn" id="logoutBtn">Sign Out</button>
+        </div>
+    </div>
+
+    <!-- Most Recent Menu Item Tally Section -->
+    <div class="section-card">
+        <div class="section-title">Most Recent Menu Item Tally</div>
+        <div class="section-body">
+            <div class="upload-area" id="uploadArea">
+                <h3>Upload PDF</h3>
+                <p>Drag & drop PDF files here, or click to browse</p>
+                <p><small>Supports multi-page and multiple PDF files</small></p>
+                <input type="file" id="fileInput" accept=".pdf" multiple style="display:none;">
+            </div>
+            <div class="upload-status" id="uploadStatus"></div>
+
+            <button class="view-tally-btn" id="viewTallyBtn">Most Recent Menu Item Tally</button>
+
+            <div class="pdf-viewer" id="pdfViewer">
+                <div class="pdf-viewer-toolbar">
+                    <span id="pdfInfo">No file loaded</span>
+                    <button id="closePdfBtn">Close Viewer</button>
+                </div>
+                <div class="pdf-pages-container" id="pdfPagesContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Needs Attention Noteboard -->
+    <div class="section-card">
+        <div class="section-title">Needs Attention</div>
+        <div class="section-body">
+            <div class="noteboard-list" id="noteboardList">
+                <div class="no-notes">Loading notes...</div>
+            </div>
+            <div class="noteboard-input-row">
+                <textarea id="noteInput" maxlength="250" placeholder="Enter a note (250 characters max)..."></textarea>
+                <button id="addNoteBtn">Post</button>
+            </div>
+            <div class="char-count" id="charCount">0 / 250</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+    // Firebase config (same project as livetimesheet)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKqak1hp_64YjINjBf3zNaq0kJbu1AhWM",
+        authDomain: "meal-schedule-5b1f4.firebaseapp.com",
+        databaseURL: "https://meal-schedule-5b1f4-default-rtdb.firebaseio.com",
+        projectId: "meal-schedule-5b1f4",
+        storageBucket: "meal-schedule-5b1f4.firebasestorage.app",
+        messagingSenderId: "796389771102",
+        appId: "1:796389771102:web:dd5300418c2a4fbb84f1cf",
+        measurementId: "G-XL8ZJ1RYLH"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    let currentUser = null;
+
+    // PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // ---- AUTH ----
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            currentUser = user;
+            showMainApp(user);
+            loadLatestTally();
+            loadNoteboard();
+        } else {
+            currentUser = null;
+            showLogin();
+        }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const message = document.getElementById('loginMessage');
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Signing in...';
+        message.classList.remove('show', 'error');
+
+        try {
+            await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value);
+        } catch (error) {
+            let errorMessage = 'Invalid email or password. Please try again.';
+            if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Please enter a valid email address.';
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMessage = 'Too many failed attempts. Please try again later.';
+            }
+            message.textContent = errorMessage;
+            message.classList.add('show', 'error');
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Sign In';
+            passwordInput.value = '';
+        }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async function() {
+        try { await auth.signOut(); } catch (e) { /* silent */ }
+    });
+
+    function showLogin() {
+        document.getElementById('loginContainer').style.display = 'block';
+        document.getElementById('mainContainer').classList.remove('show');
+        document.getElementById('email').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = 'Sign In';
+    }
+
+    function showMainApp(user) {
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('mainContainer').classList.add('show');
+        document.getElementById('userEmail').textContent = user.email;
+    }
+
+    // ---- PDF UPLOAD & STORAGE ----
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const viewTallyBtn = document.getElementById('viewTallyBtn');
+    const pdfViewer = document.getElementById('pdfViewer');
+    const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+    const pdfInfo = document.getElementById('pdfInfo');
+    const closePdfBtn = document.getElementById('closePdfBtn');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleFiles(e.target.files);
+    });
+
+    async function handleFiles(files) {
+        const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+        if (pdfFiles.length === 0) {
+            showUploadStatus('Please select PDF files only.', 'error');
+            return;
+        }
+
+        showUploadStatus('<span class="spinner-small"></span> Uploading...', '');
+
+        try {
+            // Read all files and combine as base64 array
+            const fileDataArray = [];
+            for (const file of pdfFiles) {
+                const base64 = await readFileAsBase64(file);
+                fileDataArray.push({
+                    name: file.name,
+                    data: base64,
+                    size: file.size
+                });
+            }
+
+            // Store in Firebase under menuTallyPdfs with timestamp
+            const entry = {
+                files: fileDataArray,
+                uploadedBy: currentUser.email,
+                uploadedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            await db.ref('menuTallyLatest').set(entry);
+            showUploadStatus('Upload complete. PDF saved as most recent tally.', 'success');
+            loadLatestTally();
+            fileInput.value = '';
+        } catch (err) {
+            showUploadStatus('Upload failed. File may be too large for the database (max ~5MB total).', 'error');
+        }
+    }
+
+    function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function showUploadStatus(msg, type) {
+        uploadStatus.innerHTML = msg;
+        uploadStatus.className = 'upload-status show' + (type ? ' ' + type : '');
+    }
+
+    // Load latest tally metadata from Firebase
+    function loadLatestTally() {
+        db.ref('menuTallyLatest').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.files && data.files.length > 0) {
+                viewTallyBtn.classList.add('show');
+                viewTallyBtn.onclick = () => displayPdf(data);
+            } else {
+                viewTallyBtn.classList.remove('show');
+            }
+        });
+    }
+
+    async function displayPdf(data) {
+        pdfViewer.classList.add('show');
+        pdfPagesContainer.innerHTML = '';
+        const names = data.files.map(f => f.name).join(', ');
+        const date = data.uploadedAt ? new Date(data.uploadedAt).toLocaleString() : 'Unknown';
+        pdfInfo.textContent = `${names} — uploaded by ${data.uploadedBy} on ${date}`;
+
+        for (const file of data.files) {
+            try {
+                const pdfData = atob(file.data.split(',')[1]);
+                const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+                    await page.render({ canvasContext: ctx, viewport }).promise;
+                    pdfPagesContainer.appendChild(canvas);
+                }
+            } catch (err) {
+                const errDiv = document.createElement('div');
+                errDiv.style.cssText = 'color:#721c24;padding:12px;';
+                errDiv.textContent = 'Error rendering ' + file.name;
+                pdfPagesContainer.appendChild(errDiv);
+            }
+        }
+    }
+
+    closePdfBtn.addEventListener('click', () => {
+        pdfViewer.classList.remove('show');
+        pdfPagesContainer.innerHTML = '';
+    });
+
+    // ---- NOTEBOARD ----
+    const noteboardList = document.getElementById('noteboardList');
+    const noteInput = document.getElementById('noteInput');
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const charCount = document.getElementById('charCount');
+
+    noteInput.addEventListener('input', () => {
+        const len = noteInput.value.length;
+        charCount.textContent = len + ' / 250';
+        charCount.className = 'char-count' + (len > 250 ? ' over' : '');
+    });
+
+    addNoteBtn.addEventListener('click', async () => {
+        const text = noteInput.value.trim().substring(0, 250).replace(/[\x00-\x1F\x7F]/g, '');
+        if (!text) return;
+        if (!currentUser) return;
+
+        addNoteBtn.disabled = true;
+        try {
+            await db.ref('needsAttentionNotes').push({
+                text: text,
+                author: currentUser.email,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            noteInput.value = '';
+            charCount.textContent = '0 / 250';
+        } catch (err) {
+            alert('Failed to post note.');
+        }
+        addNoteBtn.disabled = false;
+    });
+
+    function loadNoteboard() {
+        db.ref('needsAttentionNotes').orderByChild('createdAt').on('value', (snapshot) => {
+            noteboardList.innerHTML = '';
+            const notes = [];
+            snapshot.forEach((child) => {
+                notes.push({ key: child.key, ...child.val() });
+            });
+
+            if (notes.length === 0) {
+                noteboardList.innerHTML = '<div class="no-notes">No notes yet. Be the first to add one.</div>';
+                return;
+            }
+
+            // Show newest first
+            notes.reverse().forEach((note) => {
+                const div = document.createElement('div');
+                div.className = 'noteboard-item';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'note-delete';
+                deleteBtn.textContent = 'x';
+                deleteBtn.title = 'Delete note';
+                deleteBtn.onclick = () => {
+                    if (confirm('Delete this note?')) {
+                        db.ref('needsAttentionNotes/' + note.key).remove();
+                    }
+                };
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = note.text;
+
+                const meta = document.createElement('div');
+                meta.className = 'note-meta';
+                const dateStr = note.createdAt ? new Date(note.createdAt).toLocaleString() : '';
+                meta.textContent = (note.author || 'Unknown') + (dateStr ? ' — ' + dateStr : '');
+
+                div.appendChild(deleteBtn);
+                div.appendChild(textSpan);
+                div.appendChild(meta);
+                noteboardList.appendChild(div);
+            });
+        });
+    }
+</script>
+</body>
+</html>
