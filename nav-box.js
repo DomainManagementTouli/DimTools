@@ -52,10 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <a href="pdfmerger.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'pdfmerger.html' ? 'background: #f6eee3; font-weight: 600; color: #8b4513;' : ''}" onmouseover="if('${currentPage}' !== 'pdfmerger.html') this.style.background='#f9f5eb'" onmouseout="if('${currentPage}' !== 'pdfmerger.html') this.style.background='white'">PDF Merger</a>
             <a href="convertfiletypes/cft.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'convertfiletypes/cft.html' ? 'background: #f6eee3; font-weight: 600; color: #8b4513;' : ''}" onmouseover="if('${currentPage}' !== 'convertfiletypes/cft.html') this.style.background='#f9f5eb'" onmouseout="if('${currentPage}' !== 'convertfiletypes/cft.html') this.style.background='white'">Doc/Audio/Data Converter, .GIF Creator & Collage Maker</a>
 
-
-            <div style="padding: 6px 12px; font-size: 10px; font-weight: 700; color: #8b4513; text-transform: uppercase; margin-top: 4px;">Media Tools</div>
-            <a href="video-audio-overlay.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'video-audio-overlay.html' ? 'background: #f6eee3; font-weight: 600; color: #8b4513;' : ''}" onmouseover="if('${currentPage}' !== 'video-audio-overlay.html') this.style.background='#f9f5eb'" onmouseout="if('${currentPage}' !== 'video-audio-overlay.html') this.style.background='white'">Video Audio Editor</a>
-        </div>
     </div>
     `;
 
