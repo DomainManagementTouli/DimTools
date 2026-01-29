@@ -771,8 +771,8 @@
         document.getElementById('detailTimeRange').textContent = '';
         document.getElementById('detailUploadMeta').textContent = '';
 
-        // Hide upload area for "all" view
-        document.getElementById('uploadArea').style.display = 'none';
+        // Show upload area for "all" view
+        document.getElementById('uploadArea').style.display = '';
         document.getElementById('uploadStatus').className = 'upload-status';
         document.getElementById('uploadStatus').innerHTML = '';
 
@@ -847,15 +847,14 @@
     });
 
     async function handleFiles(files) {
-        if (selectedUnitIndex === null) return;
         const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
         if (pdfFiles.length === 0) {
             showUploadStatus('Please select PDF files only.', 'error');
             return;
         }
 
-        const unit = unitData[selectedUnitIndex];
-        const key = unitKey(unit.name);
+        const isAllFloors = selectedUnitIndex === null;
+        const key = isAllFloors ? 'all_floors' : unitKey(unitData[selectedUnitIndex].name);
 
         showUploadStatus('<span class="spinner-small"></span> Uploading...', '');
 
@@ -874,7 +873,11 @@
 
             await db.ref('menuTallyUnits/' + key).set(entry);
             showUploadStatus('Upload complete.', 'success');
-            loadUnitPdf(key);
+            if (isAllFloors) {
+                selectAllUnits();
+            } else {
+                loadUnitPdf(key);
+            }
         } catch (err) {
             showUploadStatus('Upload failed. File may be too large (max ~5MB).', 'error');
         }
