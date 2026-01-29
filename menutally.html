@@ -684,6 +684,22 @@
     function buildSideMenu() {
         const list = document.getElementById('sideMenuList');
         list.innerHTML = '';
+        // "All Selections" button at the top
+        const allBtn = document.createElement('button');
+        allBtn.className = 'unit-btn';
+        allBtn.dataset.index = 'all';
+        const allDot = document.createElement('span');
+        allDot.className = 'has-pdf';
+        allDot.style.background = '#1a3c8b';
+        const allLabel = document.createElement('span');
+        allLabel.className = 'btn-label';
+        allLabel.style.fontWeight = '600';
+        allLabel.textContent = 'All Selections';
+        allBtn.appendChild(allDot);
+        allBtn.appendChild(allLabel);
+        allBtn.addEventListener('click', () => selectAllUnits());
+        list.appendChild(allBtn);
+
         unitData.forEach((unit, idx) => {
             const btn = document.createElement('button');
             btn.className = 'unit-btn';
@@ -718,6 +734,9 @@
         document.getElementById('noSelection').style.display = 'none';
         document.getElementById('unitDetail').style.display = 'block';
 
+        // Show upload area (may have been hidden by "All" view)
+        document.getElementById('uploadArea').style.display = '';
+
         // Set header info
         document.getElementById('detailUnitName').textContent = unit.name;
         document.getElementById('detailTimeRange').textContent = unit.time
@@ -733,6 +752,81 @@
 
         // Load PDF if exists
         loadUnitPdf(key);
+    }
+
+    function selectAllUnits() {
+        selectedUnitIndex = null;
+
+        // Highlight "All Selections" button
+        document.querySelectorAll('.unit-btn').forEach((b) => {
+            b.classList.toggle('active', b.dataset.index === 'all');
+        });
+
+        // Show detail area
+        document.getElementById('noSelection').style.display = 'none';
+        document.getElementById('unitDetail').style.display = 'block';
+
+        // Set header
+        document.getElementById('detailUnitName').textContent = 'All Floors Menu Item Tally';
+        document.getElementById('detailTimeRange').textContent = '';
+        document.getElementById('detailUploadMeta').textContent = '';
+
+        // Hide upload area for "all" view
+        document.getElementById('uploadArea').style.display = 'none';
+        document.getElementById('uploadStatus').className = 'upload-status';
+        document.getElementById('uploadStatus').innerHTML = '';
+
+        // Load all PDFs
+        const container = document.getElementById('pdfPagesContainer');
+        const viewer = document.getElementById('pdfViewer');
+        container.innerHTML = '<div style="padding:12px;color:#666;"><span class="spinner-small"></span> Loading all tallies...</div>';
+        viewer.classList.add('show');
+
+        db.ref('menuTallyUnits').once('value', async (snapshot) => {
+            const allData = snapshot.val() || {};
+            container.innerHTML = '';
+
+            let anyRendered = false;
+            for (const unit of unitData) {
+                const key = unitKey(unit.name);
+                const data = allData[key];
+                if (data && data.files && data.files.length > 0) {
+                    // Unit heading
+                    const heading = document.createElement('div');
+                    heading.style.cssText = 'width:100%;padding:10px 14px 4px;font-size:15px;font-weight:600;color:#1a3c8b;';
+                    heading.textContent = unit.name;
+                    container.appendChild(heading);
+
+                    for (const file of data.files) {
+                        try {
+                            const pdfData = atob(file.data.split(',')[1]);
+                            const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const scale = 1.5;
+                                const viewport = page.getViewport({ scale });
+                                const canvas = document.createElement('canvas');
+                                canvas.width = viewport.width;
+                                canvas.height = viewport.height;
+                                const ctx = canvas.getContext('2d');
+                                await page.render({ canvasContext: ctx, viewport }).promise;
+                                container.appendChild(canvas);
+                            }
+                            anyRendered = true;
+                        } catch (err) {
+                            const errDiv = document.createElement('div');
+                            errDiv.style.cssText = 'color:#721c24;padding:12px;';
+                            errDiv.textContent = 'Error rendering ' + file.name;
+                            container.appendChild(errDiv);
+                        }
+                    }
+                }
+            }
+
+            if (!anyRendered) {
+                container.innerHTML = '<div style="padding:20px;color:#999;text-align:center;">No PDFs uploaded yet.</div>';
+            }
+        });
     }
 
     // ---- PDF UPLOAD & STORAGE ----
