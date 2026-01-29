@@ -317,6 +317,45 @@
         }
         .toast.show { opacity: 1; }
 
+        /* ── Page Break Indicators ── */
+        .pages-container {
+            position: relative;
+            width: 816px;
+        }
+        .page-break-indicator {
+            position: absolute;
+            left: -20px;
+            right: -20px;
+            height: 28px;
+            background: #d0d5dd;
+            z-index: 5;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                inset 0 4px 6px -2px rgba(0,0,0,0.15),
+                inset 0 -4px 6px -2px rgba(0,0,0,0.15);
+        }
+        .page-break-indicator span {
+            font-size: 10px;
+            color: #777;
+            background: #c8cdd5;
+            padding: 1px 12px;
+            border-radius: 3px;
+            letter-spacing: 0.5px;
+        }
+        .page-number-badge {
+            position: absolute;
+            top: 8px;
+            right: -60px;
+            font-size: 10px;
+            color: #999;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 5;
+        }
+
         /* ── Responsive ── */
         @media (max-width: 900px) {
             .page-container {
@@ -592,13 +631,15 @@
 
 <!-- Editor -->
 <div class="editor-wrapper" id="editorWrapper">
-    <div class="page-container" id="editor" contenteditable="true" spellcheck="true"></div>
+    <div class="pages-container" id="pagesContainer">
+        <div class="page-container" id="editor" contenteditable="true" spellcheck="true"></div>
+    </div>
 </div>
 
 <!-- Status Bar -->
 <div class="status-bar">
     <div>
-        <span id="wordCount">Words: 0</span> &nbsp;|&nbsp; <span id="charCount">Characters: 0</span> &nbsp;|&nbsp; <span id="lineCount">Lines: 0</span>
+        <span id="pageCount">Page 1 of 1</span> &nbsp;|&nbsp; <span id="wordCount">Words: 0</span> &nbsp;|&nbsp; <span id="charCount">Characters: 0</span> &nbsp;|&nbsp; <span id="lineCount">Lines: 0</span>
     </div>
     <div class="zoom-controls">
         <button onclick="zoomOut()"><i class="fa-solid fa-minus"></i></button>
@@ -1034,8 +1075,9 @@ function toggleRuler() {
 let currentZoom = 100;
 function setZoom(val) {
     currentZoom = parseInt(val);
-    editor.style.transform = `scale(${currentZoom / 100})`;
-    editor.style.transformOrigin = 'top center';
+    const container = document.getElementById('pagesContainer');
+    container.style.transform = `scale(${currentZoom / 100})`;
+    container.style.transformOrigin = 'top center';
     document.getElementById('zoomRange').value = currentZoom;
     document.getElementById('zoomLabel').textContent = currentZoom + '%';
 }
@@ -1183,6 +1225,82 @@ window.addEventListener('beforeunload', () => {
     localStorage.setItem(CACHE_KEY, editor.innerHTML);
     localStorage.setItem(TITLE_KEY, document.getElementById('docTitle').value);
 });
+
+// ─── Page Pagination Visuals ───
+const PAGE_HEIGHT = 1056; // 11in at 96dpi
+const PAGE_GAP = 28;
+let currentPageCount = 1;
+
+function updatePageVisuals() {
+    const contentHeight = Math.max(PAGE_HEIGHT, editor.scrollHeight);
+    const numPages = Math.max(1, Math.ceil(contentHeight / PAGE_HEIGHT));
+
+    if (numPages === currentPageCount) return;
+    currentPageCount = numPages;
+
+    const container = document.getElementById('pagesContainer');
+
+    // Remove old indicators
+    container.querySelectorAll('.page-break-indicator').forEach(el => el.remove());
+
+    // Add page break indicators between pages
+    for (let i = 1; i < numPages; i++) {
+        const indicator = document.createElement('div');
+        indicator.className = 'page-break-indicator';
+        indicator.style.top = (i * PAGE_HEIGHT + (i - 1) * PAGE_GAP) + 'px';
+        indicator.innerHTML = `<span>Page ${i} &nbsp;&mdash;&nbsp; Page ${i + 1}</span>`;
+        container.appendChild(indicator);
+    }
+
+    // Adjust editor margin to account for gaps
+    // Each page break adds PAGE_GAP of space, so the editor needs
+    // extra height pushed via padding at the bottom of each "page"
+    // We use border-image trick or just adjust container height
+    const totalGaps = (numPages - 1) * PAGE_GAP;
+    editor.style.marginBottom = totalGaps + 'px';
+
+    // Update page count in status bar
+    document.getElementById('pageCount').textContent = `Page 1 of ${numPages}`;
+}
+
+// Observe editor size changes
+const pageObserver = new ResizeObserver(() => {
+    updatePageVisuals();
+});
+pageObserver.observe(editor);
+
+// Also update on input for immediate response
+editor.addEventListener('input', updatePageVisuals);
+
+// Track which page the cursor is on for status bar
+editor.addEventListener('click', updateCurrentPage);
+editor.addEventListener('keyup', updateCurrentPage);
+
+function updateCurrentPage() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
+    const offsetY = rect.top - editorRect.top + editor.scrollTop;
+    // Account for gaps: each gap adds PAGE_GAP after PAGE_HEIGHT
+    let page = 1;
+    let accum = 0;
+    for (let i = 0; i < currentPageCount; i++) {
+        accum += PAGE_HEIGHT;
+        if (offsetY < accum) {
+            page = i + 1;
+            break;
+        }
+        accum += PAGE_GAP;
+        page = i + 2;
+    }
+    page = Math.min(page, currentPageCount);
+    document.getElementById('pageCount').textContent = `Page ${page} of ${currentPageCount}`;
+}
+
+// Initial update
+updatePageVisuals();
 </script>
 </body>
 </html>
