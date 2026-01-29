@@ -24,9 +24,9 @@
             display: grid;
             place-items: center;
             min-height: 100vh;
-            background-color: #f6eee3;
+            background-color: #e8edf6;
             background-size: 20px 20px;
-            background-image: repeating-linear-gradient(0deg, #e5decf, #e5decf 1px, #f6eee3 1px, #f6eee3);
+            background-image: repeating-linear-gradient(0deg, #cfd5e5, #cfd5e5 1px, #e8edf6 1px, #e8edf6);
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
@@ -58,19 +58,19 @@
             border-radius: 5px;
             padding: 2rem;
             text-align: center;
-            border: 2px dashed #8b4513;
+            border: 2px dashed #1a3c8b;
             cursor: pointer;
             transition: all 0.3s;
         }
         
         .upload-area:hover {
-            background: #f9f5eb;
-            border-color: #a0522d;
+            background: #edf0f9;
+            border-color: #2952a3;
         }
         
         .upload-area.dragover {
-            background: #f0e6d6;
-            border-color: #8b4513;
+            background: #dce2f0;
+            border-color: #1a3c8b;
             border-style: solid;
         }
         
@@ -96,7 +96,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 0.5rem 1rem;
-            background: #8b4513;
+            background: #1a3c8b;
             color: white;
             border-radius: 5px 5px 0 0;
             flex-shrink: 0;
@@ -108,7 +108,7 @@
         }
         
         .toolbar button {
-            background: #d2691e;
+            background: #2b5bbd;
             color: white;
             border: none;
             padding: 0.4rem 0.8rem;
@@ -118,7 +118,7 @@
         }
         
         .toolbar button:hover {
-            background: #a0522d;
+            background: #2952a3;
         }
         
         /* Spreadsheet wrapper */
@@ -149,7 +149,7 @@
         }
         
         #spreadsheet th {
-            background-color: #f5e9d9;
+            background-color: #e8edf6;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -157,11 +157,11 @@
         }
         
         #spreadsheet tr:nth-child(even) {
-            background-color: #f9f5eb;
+            background-color: #edf0f9;
         }
         
         #spreadsheet tr:hover {
-            background-color: #f0e6d6;
+            background-color: #dce2f0;
         }
         
         /* Loading overlay */
@@ -183,7 +183,7 @@
             width: 50px;
             height: 50px;
             border: 5px solid #f3f3f3;
-            border-top: 5px solid #8b4513;
+            border-top: 5px solid #1a3c8b;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 1rem;
@@ -212,7 +212,7 @@
         }
         
         .instructions h3 {
-            color: #8b4513;
+            color: #1a3c8b;
             margin-top: 0;
         }
         
@@ -499,7 +499,7 @@
                     console.error('Error parsing Excel file:', error);
                     spreadsheet.innerHTML = `
                         <tr>
-                            <td colspan="10" style="text-align: center; padding: 2rem; color: #8b4513;">
+                            <td colspan="10" style="text-align: center; padding: 2rem; color: #1a3c8b;">
                                 <h3>Error loading spreadsheet</h3>
                                 <p>${error.message || 'Unknown error'}</p>
                                 <p>Please make sure you're uploading a valid Excel file.</p>
@@ -513,7 +513,7 @@
             reader.onerror = function() {
                 spreadsheet.innerHTML = `
                     <tr>
-                        <td colspan="10" style="text-align: center; padding: 2rem; color: #8b4513;">
+                        <td colspan="10" style="text-align: center; padding: 2rem; color: #1a3c8b;">
                             <h3>Error reading file</h3>
                             <p>Could not read the file. Please try again.</p>
                         </td>
@@ -589,18 +589,18 @@
             rows.forEach((row, index) => {
                 if (index > 0) { // Skip header row
                     if (index % 2 === 0) {
-                        row.style.backgroundColor = '#f9f5eb';
+                        row.style.backgroundColor = '#edf0f9';
                     } else {
                         row.style.backgroundColor = 'white';
                     }
                     
                     // Add hover effect
                     row.addEventListener('mouseenter', () => {
-                        row.style.backgroundColor = '#f0e6d6';
+                        row.style.backgroundColor = '#dce2f0';
                     });
                     
                     row.addEventListener('mouseleave', () => {
-                        row.style.backgroundColor = index % 2 === 0 ? '#f9f5eb' : 'white';
+                        row.style.backgroundColor = index % 2 === 0 ? '#edf0f9' : 'white';
                     });
                 }
                 
@@ -632,10 +632,10 @@
                 // Add error message to instructions
                 const instructions = document.querySelector('.instructions');
                 const errorMsg = document.createElement('div');
-                errorMsg.style.color = '#8b4513';
+                errorMsg.style.color = '#1a3c8b';
                 errorMsg.style.marginTop = '1rem';
                 errorMsg.style.padding = '1rem';
-                errorMsg.style.backgroundColor = '#f9f5eb';
+                errorMsg.style.backgroundColor = '#edf0f9';
                 errorMsg.style.borderRadius = '5px';
                 errorMsg.innerHTML = '<strong>Warning:</strong> Spreadsheet library failed to load. Please refresh the page.';
                 instructions.appendChild(errorMsg);
