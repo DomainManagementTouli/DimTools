@@ -466,6 +466,7 @@
             </div>
             <div class="header-actions">
                 <span class="user-email" id="userEmail"></span>
+                <button class="logout-btn" id="clearAllBtn">Clear All</button>
                 <button class="logout-btn" id="logoutBtn">Sign Out</button>
             </div>
         </div>
@@ -659,6 +660,37 @@
                 setTimeout(() => updateStatus('Connected', true), 3000);
             }
         });
+
+        // Clear All button handler
+        document.getElementById('clearAllBtn').addEventListener('click', function() {
+            if (!db || !currentUser) {
+                alert('You must be signed in to clear the schedule.');
+                return;
+            }
+            if (!confirm('Are you sure you want to clear all fields?')) return;
+            clearAllFields();
+        });
+
+        function clearAllFields() {
+            const clearedData = initialData.map(row => [row[0], row[1], '', '']);
+            dataRef.set(clearedData);
+        }
+
+        // Midnight auto-reset
+        function scheduleMidnightReset() {
+            const now = new Date();
+            const midnight = new Date(now);
+            midnight.setHours(24, 0, 0, 0);
+            const msUntilMidnight = midnight - now;
+            setTimeout(() => {
+                if (dataRef && currentUser) {
+                    clearAllFields();
+                }
+                // Schedule the next one
+                scheduleMidnightReset();
+            }, msUntilMidnight);
+        }
+        scheduleMidnightReset();
 
         function showLogin() {
             document.getElementById('loginContainer').style.display = 'block';
