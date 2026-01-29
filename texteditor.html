@@ -299,70 +299,6 @@
         .find-bar button.secondary { background: #888; }
         .find-bar .close-find { background: none; color: #666; font-size: 18px; padding: 2px 8px; }
 
-        /* ── Page Setup Dialog ── */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-            width: 480px;
-            max-height: 80vh;
-            overflow-y: auto;
-            padding: 24px;
-        }
-        .modal h3 {
-            margin-bottom: 16px;
-            color: #1a3c8b;
-            font-size: 18px;
-        }
-        .modal label {
-            display: block;
-            font-size: 13px;
-            color: #555;
-            margin-bottom: 4px;
-            margin-top: 12px;
-        }
-        .modal input, .modal select {
-            width: 100%;
-            padding: 6px 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 13px;
-        }
-        .modal-row {
-            display: flex;
-            gap: 12px;
-        }
-        .modal-row > div { flex: 1; }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 20px;
-        }
-        .modal-actions button {
-            padding: 8px 20px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        .modal-actions .btn-primary {
-            background: #1a3c8b;
-            color: white;
-            border: none;
-        }
-        .modal-actions .btn-primary:hover { background: #2952a3; }
-
         /* ── Toast Notifications ── */
         .toast {
             position: fixed;
@@ -503,9 +439,6 @@
                         <span><i class="fa-solid fa-eraser"></i> Clear Formatting</span>
                     </div>
                     <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" onclick="openPageSetup()">
-                        <span><i class="fa-solid fa-gear"></i> Page Setup (Margins)</span>
-                    </div>
                     <div class="dropdown-item" onclick="setPageBg()">
                         <span><i class="fa-solid fa-fill-drip"></i> Page Background Color</span>
                     </div>
@@ -672,36 +605,6 @@
         <input type="range" min="50" max="200" value="100" id="zoomRange" oninput="setZoom(this.value)">
         <button onclick="zoomIn()"><i class="fa-solid fa-plus"></i></button>
         <span id="zoomLabel">100%</span>
-    </div>
-</div>
-
-<!-- Page Setup Modal -->
-<div class="modal-overlay" id="pageSetupModal">
-    <div class="modal">
-        <h3>Page Setup</h3>
-        <label>Page Size</label>
-        <select id="pageSize" onchange="onPageSizeChange()">
-            <option value="letter" selected>Letter (8.5 x 11 in)</option>
-            <option value="a4">A4 (8.27 x 11.69 in)</option>
-            <option value="legal">Legal (8.5 x 14 in)</option>
-        </select>
-        <label>Orientation</label>
-        <select id="pageOrientation">
-            <option value="portrait" selected>Portrait</option>
-            <option value="landscape">Landscape</option>
-        </select>
-        <div class="modal-row">
-            <div><label>Top (in)</label><input type="number" id="marginTop" value="1" min="0" max="4" step="0.25"></div>
-            <div><label>Bottom (in)</label><input type="number" id="marginBottom" value="1" min="0" max="4" step="0.25"></div>
-        </div>
-        <div class="modal-row">
-            <div><label>Left (in)</label><input type="number" id="marginLeft" value="1" min="0" max="4" step="0.25"></div>
-            <div><label>Right (in)</label><input type="number" id="marginRight" value="1" min="0" max="4" step="0.25"></div>
-        </div>
-        <div class="modal-actions">
-            <button onclick="closePageSetup()">Cancel</button>
-            <button class="btn-primary" onclick="applyPageSetup()">Apply</button>
-        </div>
     </div>
 </div>
 
@@ -1083,42 +986,6 @@ function replaceAllText() {
         toast('No matches found');
     }
 }
-
-// ─── Page Setup ───
-function openPageSetup() {
-    closeAllMenus();
-    document.getElementById('pageSetupModal').classList.add('show');
-}
-function closePageSetup() {
-    document.getElementById('pageSetupModal').classList.remove('show');
-}
-function applyPageSetup() {
-    const mt = parseFloat(document.getElementById('marginTop').value) * 96;
-    const mb = parseFloat(document.getElementById('marginBottom').value) * 96;
-    const ml = parseFloat(document.getElementById('marginLeft').value) * 96;
-    const mr = parseFloat(document.getElementById('marginRight').value) * 96;
-    editor.style.paddingTop = mt + 'px';
-    editor.style.paddingBottom = mb + 'px';
-    editor.style.paddingLeft = ml + 'px';
-    editor.style.paddingRight = mr + 'px';
-
-    const orient = document.getElementById('pageOrientation').value;
-    const size = document.getElementById('pageSize').value;
-    let w, h;
-    if (size === 'letter') { w = 816; h = 1056; }
-    else if (size === 'a4') { w = 794; h = 1123; }
-    else if (size === 'legal') { w = 816; h = 1344; }
-
-    if (orient === 'landscape') { [w, h] = [h, w]; }
-    editor.style.width = w + 'px';
-    editor.style.minHeight = h + 'px';
-
-    closePageSetup();
-    toast('Page setup applied');
-    scheduleSave();
-}
-
-function onPageSizeChange() {}
 
 function setPageBg() {
     closeAllMenus();
