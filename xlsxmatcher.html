@@ -25,9 +25,9 @@
             display: grid;
             place-items: center;
             min-height: 100vh;
-            background-color: #f6eee3;
+            background-color: #e8edf6;
             background-size: 20px 20px;
-            background-image: repeating-linear-gradient(0deg, #e5decf, #e5decf 1px, #f6eee3 1px, #f6eee3);
+            background-image: repeating-linear-gradient(0deg, #cfd5e5, #cfd5e5 1px, #e8edf6 1px, #e8edf6);
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
@@ -55,7 +55,7 @@
         
         /* Header */
         .header {
-            background: #8b4513;
+            background: #1a3c8b;
             color: white;
             padding: 2rem;
             text-align: center;
@@ -82,15 +82,15 @@
         
         /* Info box */
         .info-box {
-            background: #f9f5eb;
-            border-left: 4px solid #8b4513;
+            background: #edf0f9;
+            border-left: 4px solid #1a3c8b;
             padding: 1.5rem;
             margin-bottom: 2rem;
             border-radius: 5px;
         }
         
         .info-box h3 {
-            color: #8b4513;
+            color: #1a3c8b;
             margin-bottom: 1rem;
         }
         
@@ -108,7 +108,7 @@
         .section {
             margin-bottom: 2rem;
             padding-bottom: 2rem;
-            border-bottom: 1px solid #e5decf;
+            border-bottom: 1px solid #cfd5e5;
         }
         
         .section:last-child {
@@ -117,7 +117,7 @@
         
         .section-title {
             font-size: 1.3rem;
-            color: #8b4513;
+            color: #1a3c8b;
             margin-bottom: 1rem;
             font-weight: bold;
         }
@@ -132,7 +132,7 @@
         input[type="text"], textarea, select {
             width: 100%;
             padding: 0.8rem;
-            border: 2px solid #e5decf;
+            border: 2px solid #cfd5e5;
             border-radius: 5px;
             font-size: 1rem;
             transition: border 0.3s;
@@ -141,7 +141,7 @@
         
         input[type="text"]:focus, textarea:focus, select:focus {
             outline: none;
-            border-color: #8b4513;
+            border-color: #1a3c8b;
             box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
         }
         
@@ -171,34 +171,34 @@
         }
         
         .btn-primary {
-            background: #8b4513;
+            background: #1a3c8b;
             color: white;
         }
         
         .btn-primary:hover {
-            background: #a0522d;
+            background: #2952a3;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
         }
         
         .btn-secondary {
-            background: #d2691e;
+            background: #2b5bbd;
             color: white;
         }
         
         .btn-secondary:hover {
-            background: #a0522d;
+            background: #2952a3;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(210, 105, 30, 0.3);
         }
         
         .btn-file {
-            background: #d2691e;
+            background: #2b5bbd;
             color: white;
         }
         
         .btn-file:hover {
-            background: #a0522d;
+            background: #2952a3;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(210, 105, 30, 0.3);
         }
@@ -276,22 +276,22 @@
         #downloadSection {
             display: none;
             margin-top: 2rem;
-            background: #f9f5eb;
+            background: #edf0f9;
             padding: 2rem;
             border-radius: 5px;
-            border: 2px solid #d2691e;
+            border: 2px solid #2b5bbd;
         }
         
         #downloadSection .section-title {
             text-align: center;
             font-size: 1.5rem;
-            color: #8b4513;
+            color: #1a3c8b;
         }
         
         #formatSelect {
             background: white;
-            color: #8b4513;
-            border: 2px solid #d2691e;
+            color: #1a3c8b;
+            border: 2px solid #2b5bbd;
             font-weight: 600;
         }
         
@@ -418,14 +418,14 @@
             <div id="status"></div>
 
             <div id="downloadSection">
-                <div class="section" style="background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%); padding: 1.5rem; border-radius: 5px; border: 2px solid #a0522d;">
+                <div class="section" style="background: linear-gradient(135deg, #2b5bbd 0%, #1a3c8b 100%); padding: 1.5rem; border-radius: 5px; border: 2px solid #2952a3;">
                     <div class="section-title" style="color: white; text-align: center; margin-bottom: 1rem;">
                        ⬇️ 4. DOWNLOAD YOUR RESULTS ⬇️
                     </div>
                     <label style="color: white; text-align: center; display: block; margin-bottom: 1rem;">
                         📁 Choose Your Download Format:
                     </label>
-                    <select id="formatSelect" style="font-size: 1rem; padding: 0.8rem; border: 2px solid #ffd700; background: white; color: #8b4513; cursor: pointer; width: 100%;">
+                    <select id="formatSelect" style="font-size: 1rem; padding: 0.8rem; border: 2px solid #ffd700; background: white; color: #1a3c8b; cursor: pointer; width: 100%;">
                         <option value="txt">📄 TXT - Plain Text</option>
                         <option value="csv">📊 CSV - Comma Separated Values</option>
                         <option value="json">🔧 JSON - JavaScript Object Notation</option>
