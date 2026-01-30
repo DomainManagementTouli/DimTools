@@ -778,7 +778,11 @@
             } else if (error.code === 'auth/network-request-failed') {
                 errorMessage = 'Network error. Please check your connection.';
             } else if (error.code === 'auth/unauthorized-domain') {
-                errorMessage = 'This domain is not authorized for Google sign-in.';
+                errorMessage = 'This domain is not authorized for Google sign-in. Add this domain in Firebase Console > Authentication > Settings > Authorized domains.';
+            } else if (error.code === 'auth/operation-not-allowed') {
+                errorMessage = 'Google sign-in is not enabled. Enable it in Firebase Console > Authentication > Sign-in method.';
+            } else if (error.code) {
+                errorMessage = `Google sign-in error (${error.code}): ${error.message}`;
             }
 
             message.textContent = errorMessage;
