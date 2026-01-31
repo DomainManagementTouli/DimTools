@@ -23,82 +23,6 @@
             padding: 20px;
         }
 
-        /* Login styles */
-        .login-container {
-            max-width: 400px;
-            margin: 80px auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-            padding: 40px;
-            border: 2px solid #1a3c8b;
-        }
-        .login-container h1 {
-            font-size: 22px;
-            margin-bottom: 8px;
-            color: #1a3c8b;
-            text-align: center;
-        }
-        .login-container p {
-            color: #6c757d;
-            margin-bottom: 24px;
-            font-size: 14px;
-            text-align: center;
-        }
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-        .login-form label {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1a3c8b;
-            margin-bottom: 5px;
-        }
-        .login-form input {
-            padding: 10px 12px;
-            border: 2px solid #8ba3d9;
-            border-radius: 5px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: border-color 0.2s;
-        }
-        .login-form input:focus {
-            outline: none;
-            border-color: #1a3c8b;
-        }
-        .login-form button {
-            padding: 12px;
-            background: #1a3c8b;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .login-form button:hover { background: #2952a3; }
-        .login-form button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .message {
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 13px;
-            display: none;
-            margin-bottom: 10px;
-        }
-        .message.show { display: block; }
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
         /* Main app */
         .app-wrapper {
             display: none;
@@ -469,112 +393,10 @@
             }
         }
 
-        /* Google Sign-In button styles */
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 20px 0;
-        }
-
-        .divider-line {
-            flex: 1;
-            height: 1px;
-            background-color: #8ba3d9;
-        }
-
-        .divider-text {
-            padding: 0 15px;
-            color: #6c757d;
-            font-size: 13px;
-        }
-
-        #googleSignInBtn {
-            background-color: white;
-            color: #333;
-            border: 2px solid #8ba3d9;
-            padding: 12px;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        #googleSignInBtn:hover {
-            border-color: #1a3c8b;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transform: translateY(-1px);
-        }
-
-        #googleSignInBtn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .google-icon {
-            width: 20px;
-            height: 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ccc;
-            border-top-color: #1a3c8b;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
     </style>
 </head>
 <body>
 <script src="nav-box.js"></script>
-
-<!-- Login Screen -->
-<div class="login-container" id="loginContainer">
-    <h1>Menu Tally & Noteboard</h1>
-    <p>Sign in to access uploads and notes</p>
-    <div class="message" id="loginMessage"></div>
-    <form class="login-form" id="loginForm">
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
-        </div>
-        <button type="submit" id="loginBtn">Sign In</button>
-
-        <!-- Google Sign-In Section -->
-        <div class="divider">
-            <div class="divider-line"></div>
-            <span class="divider-text">or continue with</span>
-            <div class="divider-line"></div>
-        </div>
-
-        <button type="button" id="googleSignInBtn">
-            <svg class="google-icon" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Sign in with Google
-        </button>
-    </form>
-</div>
 
 <!-- Main Application -->
 <div class="app-wrapper" id="mainContainer">
@@ -714,78 +536,7 @@
             loadNoteboard();
         } else {
             currentUser = null;
-            showLogin();
-        }
-    });
-
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const loginBtn = document.getElementById('loginBtn');
-        const message = document.getElementById('loginMessage');
-
-        loginBtn.disabled = true;
-        loginBtn.textContent = 'Signing in...';
-        message.classList.remove('show', 'error');
-
-        try {
-            await auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value);
-        } catch (error) {
-            let errorMessage = 'Invalid email or password. Please try again.';
-            if (error.code === 'auth/invalid-email') {
-                errorMessage = 'Please enter a valid email address.';
-            } else if (error.code === 'auth/too-many-requests') {
-                errorMessage = 'Too many failed attempts. Please try again later.';
-            }
-            message.textContent = errorMessage;
-            message.classList.add('show', 'error');
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Sign In';
-            passwordInput.value = '';
-        }
-    });
-
-    // Google Sign-In handler
-    document.getElementById('googleSignInBtn').addEventListener('click', async function() {
-        const message = document.getElementById('loginMessage');
-        const googleBtn = document.getElementById('googleSignInBtn');
-
-        message.classList.remove('show', 'error');
-
-        googleBtn.disabled = true;
-        const originalContent = googleBtn.innerHTML;
-        googleBtn.innerHTML = `
-            <div class="spinner"></div>
-            <span>Connecting to Google...</span>
-        `;
-
-        try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            provider.addScope('email');
-            provider.addScope('profile');
-
-            await auth.signInWithPopup(provider);
-        } catch (error) {
-            console.error('Google sign-in error:', error);
-
-            let errorMessage = 'Google sign-in failed. Please try again.';
-
-            if (error.code === 'auth/popup-blocked') {
-                errorMessage = 'Popup was blocked by browser. Please allow popups for this site.';
-            } else if (error.code === 'auth/popup-closed-by-user') {
-                errorMessage = 'Sign-in was cancelled.';
-            } else if (error.code === 'auth/network-request-failed') {
-                errorMessage = 'Network error. Please check your connection.';
-            } else if (error.code === 'auth/unauthorized-domain') {
-                errorMessage = 'This domain is not authorized for Google sign-in.';
-            }
-
-            message.textContent = errorMessage;
-            message.classList.add('show', 'error');
-
-            googleBtn.disabled = false;
-            googleBtn.innerHTML = originalContent;
+            window.location.href = 'login.html?redirect=menutally.html';
         }
     });
 
@@ -793,30 +544,7 @@
         try { await auth.signOut(); } catch (e) { /* silent */ }
     });
 
-    function showLogin() {
-        document.getElementById('loginContainer').style.display = 'block';
-        document.getElementById('mainContainer').classList.remove('show');
-        document.getElementById('email').value = '';
-        document.getElementById('password').value = '';
-        document.getElementById('loginBtn').disabled = false;
-        document.getElementById('loginBtn').textContent = 'Sign In';
-
-        // Reset Google button
-        const googleBtn = document.getElementById('googleSignInBtn');
-        googleBtn.disabled = false;
-        googleBtn.innerHTML = `
-            <svg class="google-icon" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Sign in with Google
-        `;
-    }
-
     function showMainApp(user) {
-        document.getElementById('loginContainer').style.display = 'none';
         document.getElementById('mainContainer').classList.add('show');
         document.getElementById('userEmail').textContent = user.email;
     }
