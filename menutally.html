@@ -737,6 +737,7 @@
             const entry = {
                 files: fileDataArray,
                 uploadedBy: currentUser.email,
+                uploadedByUid: currentUser.uid,
                 uploadedAt: firebase.database.ServerValue.TIMESTAMP
             };
 
@@ -772,8 +773,19 @@
             const data = snapshot.val();
             if (data && data.files && data.files.length > 0) {
                 const dateStr = data.uploadedAt ? new Date(data.uploadedAt).toLocaleString() : '';
-                document.getElementById('detailUploadMeta').textContent =
-                    'Uploaded by ' + (data.uploadedBy || 'Unknown') + (dateStr ? ' on ' + dateStr : '');
+                const metaEl = document.getElementById('detailUploadMeta');
+                metaEl.innerHTML = '';
+                if (data.uploadedByUid) {
+                    const avatarSpan = document.createElement('span');
+                    avatarSpan.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;background:#e8edf6;border:1px solid #1a3c8b;vertical-align:middle;margin-right:5px;overflow:hidden;font-size:10px;line-height:18px;text-align:center;color:#1a3c8b;font-weight:600;';
+                    avatarSpan.textContent = (data.uploadedBy || '?').charAt(0).toUpperCase();
+                    metaEl.appendChild(avatarSpan);
+                    db.ref('users/' + data.uploadedByUid + '/avatarUrl').once('value').then(function(snap) {
+                        var url = snap.val();
+                        if (url) avatarSpan.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                    }).catch(function() {});
+                }
+                metaEl.appendChild(document.createTextNode('Uploaded by ' + (data.uploadedBy || 'Unknown') + (dateStr ? ' on ' + dateStr : '')));
                 await displayPdf(data);
             } else {
                 document.getElementById('detailUploadMeta').textContent = 'No PDF uploaded yet.';
@@ -847,6 +859,7 @@
             await db.ref('needsAttentionNotes').push({
                 text: text,
                 author: currentUser.email,
+                authorUid: currentUser.uid,
                 createdAt: firebase.database.ServerValue.TIMESTAMP
             });
             noteInput.value = '';
@@ -891,7 +904,17 @@
                 const meta = document.createElement('div');
                 meta.className = 'note-meta';
                 const dateStr = note.createdAt ? new Date(note.createdAt).toLocaleString() : '';
-                meta.textContent = (note.author || 'Unknown') + (dateStr ? ' — ' + dateStr : '');
+                if (note.authorUid) {
+                    const noteAvatar = document.createElement('span');
+                    noteAvatar.style.cssText = 'display:inline-block;width:16px;height:16px;border-radius:50%;background:#e8edf6;border:1px solid #1a3c8b;vertical-align:middle;margin-right:4px;overflow:hidden;font-size:9px;line-height:16px;text-align:center;color:#1a3c8b;font-weight:600;';
+                    noteAvatar.textContent = (note.author || '?').charAt(0).toUpperCase();
+                    meta.appendChild(noteAvatar);
+                    db.ref('users/' + note.authorUid + '/avatarUrl').once('value').then(function(snap) {
+                        var url = snap.val();
+                        if (url) noteAvatar.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                    }).catch(function() {});
+                }
+                meta.appendChild(document.createTextNode((note.author || 'Unknown') + (dateStr ? ' — ' + dateStr : '')));
 
                 div.appendChild(deleteBtn);
                 div.appendChild(textSpan);

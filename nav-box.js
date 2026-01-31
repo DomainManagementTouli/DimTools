@@ -1,4 +1,4 @@
-// Compact navigation menu for all pages
+// Compact navigation menu + top-right auth button for all pages
 document.addEventListener('DOMContentLoaded', function() {
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
@@ -37,10 +37,6 @@ document.addEventListener('DOMContentLoaded', function() {
         ">
             <a href="/index.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'index.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'index.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'index.html') this.style.background='white'">🏠 Home</a>
 
-            <div style="padding: 6px 12px; font-size: 10px; font-weight: 700; color: #1a3c8b; text-transform: uppercase; margin-top: 4px;">Account</div>
-            <a href="/signup.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'signup.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'signup.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'signup.html') this.style.background='white'">Sign Up</a>
-            <a href="/account.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'account.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'account.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'account.html') this.style.background='white'">My Account</a>
-
             <div style="padding: 6px 12px; font-size: 10px; font-weight: 700; color: #1a3c8b; text-transform: uppercase; margin-top: 4px;">Call Center Tools</div>
             <a href="/tomorrowunfed.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'tomorrowunfed.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'tomorrowunfed.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'tomorrowunfed.html') this.style.background='white'">Unfed Count</a>
             <a href="/xlsxviewer.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'xlsxviewer.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'xlsxviewer.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'xlsxviewer.html') this.style.background='white'">XLSX Viewer</a>
@@ -61,7 +57,26 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     `;
 
+    // Top-right auth button area
+    const authHTML = `
+    <div id="navAuthArea" style="
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    ">
+        <div id="navAuthLoading" style="
+            width: 28px; height: 28px; border-radius: 50%;
+            background: #e0e4ed;
+        "></div>
+    </div>
+    `;
+
     document.body.insertAdjacentHTML('afterbegin', navHTML);
+    document.body.insertAdjacentHTML('afterbegin', authHTML);
 
     // Toggle menu
     document.getElementById('navToggle').addEventListener('click', function(e) {
@@ -77,4 +92,126 @@ document.addEventListener('DOMContentLoaded', function() {
             menu.style.display = 'none';
         }
     });
+
+    // Auth state: show Sign In or My Account + avatar
+    // Only run if Firebase is loaded on this page
+    function initAuthButton() {
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            // Firebase not on this page — show sign in link (no auth check possible)
+            showSignedOut();
+            return;
+        }
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                showSignedIn(user);
+            } else {
+                showSignedOut();
+            }
+        });
+    }
+
+    function showSignedOut() {
+        var area = document.getElementById('navAuthArea');
+        if (!area) return;
+        area.innerHTML = `
+            <a href="/login.html" id="navSignInBtn" style="
+                padding: 6px 14px;
+                background: white;
+                color: #1a3c8b;
+                border: 1.5px solid #1a3c8b;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            " onmouseover="this.style.background='#1a3c8b';this.style.color='white'" onmouseout="this.style.background='white';this.style.color='#1a3c8b'">Sign In</a>
+            <a href="/signup.html" id="navSignUpBtn" style="
+                padding: 6px 14px;
+                background: #1a3c8b;
+                color: white;
+                border: 1.5px solid #1a3c8b;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            " onmouseover="this.style.background='#2952a3';this.style.borderColor='#2952a3'" onmouseout="this.style.background='#1a3c8b';this.style.borderColor='#1a3c8b'">Sign Up</a>
+        `;
+    }
+
+    function showSignedIn(user) {
+        var area = document.getElementById('navAuthArea');
+        if (!area) return;
+        // Build initial letter fallback
+        var initial = (user.displayName || user.email || '?').charAt(0).toUpperCase();
+        area.innerHTML = `
+            <a href="/account.html" style="
+                padding: 6px 14px;
+                background: white;
+                color: #1a3c8b;
+                border: 1.5px solid #1a3c8b;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            " onmouseover="this.style.background='#1a3c8b';this.style.color='white'" onmouseout="this.style.background='white';this.style.color='#1a3c8b'">My Account</a>
+            <a href="/account.html" id="navAvatarLink" style="text-decoration:none;">
+                <div id="navAvatarPlaceholder" style="
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    background: #e8edf6;
+                    border: 1.5px solid #1a3c8b;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: #1a3c8b;
+                    overflow: hidden;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">${initial}</div>
+            </a>
+        `;
+        // Try to load avatar from Realtime Database
+        if (firebase.database) {
+            firebase.database().ref('users/' + user.uid + '/avatarUrl').once('value').then(function(snap) {
+                var url = snap.val();
+                if (url) {
+                    var el = document.getElementById('navAvatarPlaceholder');
+                    if (el) {
+                        el.innerHTML = '<img src="' + url + '" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                    }
+                }
+            }).catch(function() {});
+        }
+    }
+
+    // Wait for Firebase scripts (they may load after nav-box.js)
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        initAuthButton();
+    } else {
+        // Poll briefly for Firebase to load
+        var attempts = 0;
+        var poll = setInterval(function() {
+            attempts++;
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                clearInterval(poll);
+                initAuthButton();
+            } else if (attempts > 30) {
+                // Firebase not loaded on this page, show sign-in links
+                clearInterval(poll);
+                showSignedOut();
+            }
+        }, 100);
+    }
 });
