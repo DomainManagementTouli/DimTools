@@ -35,11 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
             min-width: 220px;
             padding: 8px 0;
         ">
-            <a href="/index.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'index.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'index.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'index.html') this.style.background='white'">🏠 Home</a>
-
-            <div style="padding: 6px 12px; font-size: 10px; font-weight: 700; color: #1a3c8b; text-transform: uppercase; margin-top: 4px;">Account</div>
-            <a href="/signup.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'signup.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'signup.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'signup.html') this.style.background='white'">Sign Up</a>
-            <a href="/account.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'account.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'account.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'account.html') this.style.background='white'">My Account</a>
+            <a href="/index.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'index.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'index.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'index.html') this.style.background='white'">🏠 Home</a>          
 
             <div style="padding: 6px 12px; font-size: 10px; font-weight: 700; color: #1a3c8b; text-transform: uppercase; margin-top: 4px;">Call Center Tools</div>
             <a href="/tomorrowunfed.html" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; ${currentPage === 'tomorrowunfed.html' ? 'background: #e8edf6; font-weight: 600; color: #1a3c8b;' : ''}" onmouseover="if('${currentPage}' !== 'tomorrowunfed.html') this.style.background='#edf0f9'" onmouseout="if('${currentPage}' !== 'tomorrowunfed.html') this.style.background='white'">Unfed Count</a>
