@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>DimTools - My Account</title>
+    <link rel="icon" href="favicon.ico">
+    <style>
+        @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background-color: #e8edf6;
+            background-size: 20px 20px;
+            background-image: repeating-linear-gradient(0deg, #cfd5e5, #cfd5e5 1px, #e8edf6 1px, #e8edf6);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .account-container {
+            max-width: 500px;
+            margin: 60px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            padding: 40px;
+            border: 2px solid #1a3c8b;
+        }
+        .account-container h1 {
+            font-size: 22px;
+            margin-bottom: 24px;
+            color: #1a3c8b;
+            text-align: center;
+        }
+
+        /* Avatar */
+        .avatar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+        .avatar-wrapper {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            margin-bottom: 12px;
+        }
+        .avatar-img {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #1a3c8b;
+            background: #e8edf6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .avatar-placeholder {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 3px solid #1a3c8b;
+            background: #e8edf6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #1a3c8b;
+            font-weight: 700;
+        }
+        .avatar-upload-btn {
+            padding: 8px 16px;
+            background: white;
+            color: #1a3c8b;
+            border: 2px solid #1a3c8b;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .avatar-upload-btn:hover {
+            background: #1a3c8b;
+            color: white;
+        }
+        .avatar-upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        #avatarInput { display: none; }
+        .avatar-status {
+            font-size: 12px;
+            margin-top: 6px;
+            color: #6c757d;
+        }
+
+        /* Profile info */
+        .profile-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .profile-field {
+            display: flex;
+            flex-direction: column;
+        }
+        .profile-field label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a3c8b;
+            margin-bottom: 4px;
+        }
+        .profile-field .value {
+            padding: 10px 12px;
+            background: #f4f6fb;
+            border: 2px solid #e0e4ed;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+        .profile-field input {
+            padding: 10px 12px;
+            border: 2px solid #8ba3d9;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .profile-field input:focus {
+            outline: none;
+            border-color: #1a3c8b;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .btn-primary {
+            padding: 10px 20px;
+            background: #1a3c8b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background: #2952a3; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-secondary {
+            padding: 10px 20px;
+            background: white;
+            color: #1a3c8b;
+            border: 2px solid #1a3c8b;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { background: #f4f6fb; }
+        .btn-danger {
+            padding: 10px 20px;
+            background: white;
+            color: #c0392b;
+            border: 2px solid #c0392b;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 16px;
+        }
+        .btn-danger:hover { background: #c0392b; color: white; }
+
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            display: none;
+            margin-bottom: 16px;
+        }
+        .message.show { display: block; }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .meta-info {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e4ed;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spinner-large {
+            width: 36px;
+            height: 36px;
+            border: 3px solid #e0e4ed;
+            border-top-color: #1a3c8b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+    </style>
+</head>
+<body>
+<script src="nav-box.js"></script>
+
+<div class="account-container" id="accountContainer">
+    <div class="loading" id="loadingState">
+        <div class="spinner-large"></div>
+        <p>Loading your account...</p>
+    </div>
+
+    <div id="profileView" style="display:none;">
+        <h1>My Account</h1>
+        <div class="message" id="profileMessage"></div>
+
+        <!-- Avatar -->
+        <div class="avatar-section">
+            <div class="avatar-wrapper">
+                <div class="avatar-placeholder" id="avatarPlaceholder"></div>
+                <img class="avatar-img" id="avatarImg" style="display:none;" alt="Avatar">
+            </div>
+            <button class="avatar-upload-btn" id="avatarUploadBtn">Change Avatar</button>
+            <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/gif,image/webp">
+            <span class="avatar-status" id="avatarStatus"></span>
+        </div>
+
+        <!-- Profile Fields -->
+        <div class="profile-section">
+            <div class="profile-field">
+                <label>Username</label>
+                <input type="text" id="usernameInput" maxlength="30">
+            </div>
+            <div class="profile-field">
+                <label>Email</label>
+                <div class="value" id="emailDisplay"></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn-primary" id="saveBtn">Save Changes</button>
+            </div>
+            <div class="meta-info" id="metaInfo"></div>
+        </div>
+
+        <button class="btn-danger" id="signOutBtn">Sign Out</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKqak1hp_64YjINjBf3zNaq0kJbu1AhWM",
+        authDomain: "meal-schedule-5b1f4.firebaseapp.com",
+        databaseURL: "https://meal-schedule-5b1f4-default-rtdb.firebaseio.com",
+        projectId: "meal-schedule-5b1f4",
+        storageBucket: "meal-schedule-5b1f4.firebasestorage.app",
+        messagingSenderId: "796389771102",
+        appId: "1:796389771102:web:dd5300418c2a4fbb84f1cf",
+        measurementId: "G-XL8ZJ1RYLH"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const storage = firebase.storage();
+
+    let currentUser = null;
+
+    function showMessage(text, type) {
+        const msg = document.getElementById('profileMessage');
+        msg.textContent = text;
+        msg.className = 'message show ' + type;
+        setTimeout(() => msg.classList.remove('show'), 4000);
+    }
+
+    function setAvatar(url) {
+        const img = document.getElementById('avatarImg');
+        const placeholder = document.getElementById('avatarPlaceholder');
+        if (url) {
+            img.src = url;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+        } else {
+            img.style.display = 'none';
+            placeholder.style.display = 'flex';
+            const name = document.getElementById('usernameInput').value || currentUser.email || '?';
+            placeholder.textContent = name.charAt(0).toUpperCase();
+        }
+    }
+
+    async function loadProfile(user) {
+        currentUser = user;
+        document.getElementById('emailDisplay').textContent = user.email;
+
+        const snapshot = await db.ref('users/' + user.uid).once('value');
+        const data = snapshot.val();
+
+        if (data) {
+            document.getElementById('usernameInput').value = data.username || user.displayName || '';
+            setAvatar(data.avatarUrl || '');
+            if (data.createdAt) {
+                document.getElementById('metaInfo').textContent = 'Account created: ' + new Date(data.createdAt).toLocaleDateString();
+            }
+        } else {
+            // First visit — create profile entry
+            const username = user.displayName || '';
+            document.getElementById('usernameInput').value = username;
+            await db.ref('users/' + user.uid).set({
+                username: username,
+                email: user.email,
+                avatarUrl: '',
+                createdAt: Date.now()
+            });
+            setAvatar('');
+        }
+
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('profileView').style.display = 'block';
+    }
+
+    // Auth gate
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            loadProfile(user);
+        } else {
+            window.location.href = 'login.html?redirect=account.html';
+        }
+    });
+
+    // Save username
+    document.getElementById('saveBtn').addEventListener('click', async function() {
+        const btn = this;
+        const username = document.getElementById('usernameInput').value.trim();
+        if (!username) {
+            showMessage('Username cannot be empty.', 'error');
+            return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        try {
+            await currentUser.updateProfile({ displayName: username });
+            await db.ref('users/' + currentUser.uid + '/username').set(username);
+            showMessage('Profile updated.', 'success');
+            setAvatar(document.getElementById('avatarImg').src || '');
+        } catch (err) {
+            showMessage('Failed to save. ' + err.message, 'error');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    });
+
+    // Avatar upload
+    document.getElementById('avatarUploadBtn').addEventListener('click', () => {
+        document.getElementById('avatarInput').click();
+    });
+
+    document.getElementById('avatarInput').addEventListener('change', async function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            showMessage('Please select an image file.', 'error');
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            showMessage('Image must be under 2 MB.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('avatarUploadBtn');
+        const status = document.getElementById('avatarStatus');
+        btn.disabled = true;
+        status.textContent = 'Uploading...';
+
+        try {
+            const ext = file.name.split('.').pop();
+            const ref = storage.ref('avatars/' + currentUser.uid + '/avatar.' + ext);
+            await ref.put(file);
+            const url = await ref.getDownloadURL();
+            await db.ref('users/' + currentUser.uid + '/avatarUrl').set(url);
+            setAvatar(url);
+            status.textContent = 'Avatar updated!';
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        } catch (err) {
+            showMessage('Upload failed. ' + err.message, 'error');
+            status.textContent = '';
+        }
+        btn.disabled = false;
+        this.value = '';
+    });
+
+    // Sign out
+    document.getElementById('signOutBtn').addEventListener('click', () => {
+        auth.signOut();
+    });
+</script>
+</body>
+</html>
