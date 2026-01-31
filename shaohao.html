@@ -360,13 +360,13 @@ body{
 <div class="bubble-grid" id="bubbleGrid"></div>
 
 <script>
-const BASE = 'https://raw.githubusercontent.com/DomainManagementTouli/QuantDim/main/innovoid/';
-const GH_VIEW = 'https://github.com/DomainManagementTouli/QuantDim/blob/main/innovoid/';
+const GH_PDF = 'https://github.com/DomainManagementTouli/QuantDim/blob/main/innovoid/';
+const LOCAL = 'mantistemics/';
 
 const articles = [
-  { file:'innovoid.html', title:'Research Hub', raw:true },
-  { file:'mpt.html', title:'Microplastics Toxicology', raw:true },
-  { file:'embodiedcognition.html', title:'Embodied Cognition & Rights', raw:true },
+  { file:'innovoid.html', title:'Research Hub', local:true },
+  { file:'mpt.html', title:'Microplastics Toxicology', local:true },
+  { file:'embodiedcognition.html', title:'Embodied Cognition & Rights', local:true },
   { file:'aboutthebn.pdf', title:'Bayesian Evidence Network' },
   { file:'bup.pdf', title:'Buprenorphine Analysis' },
   { file:'econconstraints.pdf', title:'Economic Constraints' },
@@ -380,7 +380,7 @@ const articles = [
 const grid = document.getElementById('bubbleGrid');
 
 articles.forEach((a, i) => {
-  const url = a.file.endsWith('.pdf') ? GH_VIEW + a.file : BASE + a.file;
+  const url = a.local ? LOCAL + a.file : GH_PDF + a.file;
   const link = document.createElement('a');
   link.href = url;
   link.target = '_blank';
