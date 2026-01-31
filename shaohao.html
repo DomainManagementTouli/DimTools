@@ -796,9 +796,9 @@ const BASE = 'https://raw.githubusercontent.com/DomainManagementTouli/QuantDim/m
 const GH_VIEW = 'https://github.com/DomainManagementTouli/QuantDim/blob/main/innovoid/';
 
 const articles = [
-  { file:'innovoid.html', title:'Research Hub', raw:true },
-  { file:'mpt.html', title:'Microplastics Toxicology', raw:true },
-  { file:'embodiedcognition.html', title:'Embodied Cognition & Rights', raw:true },
+  { file:'innovoid.html', title:'Research Hub' },
+  { file:'mpt.html', title:'Microplastics Toxicology' },
+  { file:'embodiedcognition.html', title:'Embodied Cognition & Rights' },
   { file:'aboutthebn.pdf', title:'Bayesian Evidence Network' },
   { file:'bup.pdf', title:'Buprenorphine Analysis' },
   { file:'econconstraints.pdf', title:'Economic Constraints' },
@@ -812,7 +812,7 @@ const articles = [
 const grid = document.getElementById('bubbleGrid');
 
 articles.forEach((a, i) => {
-  const url = a.file.endsWith('.pdf') ? GH_VIEW + a.file : BASE + a.file;
+  const url = LOCAL + a.file;
   const link = document.createElement('a');
   link.href = url;
   link.target = '_blank';
