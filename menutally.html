@@ -218,6 +218,24 @@
             color: #666;
             font-size: 12px;
         }
+        .clear-floor-btn {
+            display: none;
+            background: none;
+            border: 1px solid #c0392b;
+            color: #c0392b;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+        .clear-floor-btn:hover {
+            background: #c0392b;
+            color: white;
+        }
+        .clear-floor-btn.show { display: inline-block; }
+
         .upload-status {
             font-size: 13px;
             color: #666;
@@ -404,6 +422,7 @@
         <h1>Menu Tally & Noteboard</h1>
         <div class="app-header-right">
             <span id="userEmail"></span>
+            <button class="logout-btn" id="clearAllUploadsBtn" style="background:#c0392b;">Clear All Uploads</button>
             <button class="logout-btn" id="logoutBtn">Sign Out</button>
         </div>
     </div>
@@ -441,6 +460,7 @@
                             <input type="file" id="fileInput" accept=".pdf" multiple style="display:none;">
                         </div>
                         <div class="upload-status" id="uploadStatus"></div>
+                        <button class="clear-floor-btn" id="clearFloorBtn">Clear this floor's upload</button>
 
                         <div class="pdf-viewer" id="pdfViewer">
                             <div class="pdf-pages-container" id="pdfPagesContainer"></div>
@@ -451,7 +471,7 @@
 
             <!-- Needs Attention Noteboard -->
             <div class="section-card">
-                <div class="section-title">Needs Attention</div>
+                <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">Needs Attention <button id="clearAllNotesBtn" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;">Clear All Notes</button></div>
                 <div class="section-body">
                     <div class="noteboard-list" id="noteboardList">
                         <div class="no-notes">Loading notes...</div>
@@ -544,6 +564,51 @@
         try { await auth.signOut(); } catch (e) { /* silent */ }
     });
 
+    // Clear All Uploads
+    document.getElementById('clearAllUploadsBtn').addEventListener('click', async function() {
+        if (!currentUser) return;
+        if (!confirm('Clear ALL uploaded PDFs for every floor? This cannot be undone.')) return;
+        try {
+            await db.ref('menuTallyUnits').remove();
+            showUploadStatus('All uploads cleared.', 'success');
+            document.getElementById('pdfViewer').classList.remove('show');
+            document.getElementById('pdfPagesContainer').innerHTML = '';
+            document.getElementById('clearFloorBtn').classList.remove('show');
+        } catch (err) {
+            alert('Failed to clear: ' + (err.message || err));
+        }
+    });
+
+    // Clear single floor upload
+    document.getElementById('clearFloorBtn').addEventListener('click', async function() {
+        if (!currentUser) return;
+        const isAllFloors = selectedUnitIndex === null;
+        const label = isAllFloors ? 'all floors' : unitData[selectedUnitIndex].name;
+        if (!confirm('Clear uploaded PDF for ' + label + '?')) return;
+        const key = isAllFloors ? 'all_floors' : unitKey(unitData[selectedUnitIndex].name);
+        try {
+            await db.ref('menuTallyUnits/' + key).remove();
+            showUploadStatus('Upload cleared for ' + label + '.', 'success');
+            document.getElementById('pdfViewer').classList.remove('show');
+            document.getElementById('pdfPagesContainer').innerHTML = '';
+            document.getElementById('clearFloorBtn').classList.remove('show');
+            document.getElementById('detailUploadMeta').textContent = 'No PDF uploaded yet.';
+        } catch (err) {
+            alert('Failed to clear: ' + (err.message || err));
+        }
+    });
+
+    // Clear All Notes
+    document.getElementById('clearAllNotesBtn').addEventListener('click', async function() {
+        if (!currentUser) return;
+        if (!confirm('Clear ALL notes? This cannot be undone.')) return;
+        try {
+            await db.ref('needsAttentionNotes').remove();
+        } catch (err) {
+            alert('Failed to clear notes: ' + (err.message || err));
+        }
+    });
+
     function showMainApp(user) {
         document.getElementById('mainContainer').classList.add('show');
         document.getElementById('userEmail').textContent = user.email;
@@ -618,6 +683,7 @@
         document.getElementById('pdfPagesContainer').innerHTML = '';
         document.getElementById('uploadStatus').className = 'upload-status';
         document.getElementById('uploadStatus').innerHTML = '';
+        document.getElementById('clearFloorBtn').classList.remove('show');
 
         // Load PDF if exists
         loadUnitPdf(key);
@@ -748,7 +814,15 @@
                 loadUnitPdf(key);
             }
         } catch (err) {
-            showUploadStatus('Upload failed. File may be too large (max ~5MB).', 'error');
+            console.error('Upload error:', err);
+            const msg = (err && err.message) ? err.message : 'Unknown error';
+            if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('denied')) {
+                showUploadStatus('Upload failed: permission denied. Check Firebase rules.', 'error');
+            } else if (msg.toLowerCase().includes('size') || msg.toLowerCase().includes('large') || msg.toLowerCase().includes('payload')) {
+                showUploadStatus('Upload failed. File may be too large (max ~5MB).', 'error');
+            } else {
+                showUploadStatus('Upload failed: ' + msg, 'error');
+            }
         }
     }
 
@@ -774,10 +848,12 @@
                 const dateStr = data.uploadedAt ? new Date(data.uploadedAt).toLocaleString() : '';
                 document.getElementById('detailUploadMeta').textContent =
                     'Uploaded by ' + (data.uploadedBy || 'Unknown') + (dateStr ? ' on ' + dateStr : '');
+                document.getElementById('clearFloorBtn').classList.add('show');
                 await displayPdf(data);
             } else {
                 document.getElementById('detailUploadMeta').textContent = 'No PDF uploaded yet.';
                 document.getElementById('pdfViewer').classList.remove('show');
+                document.getElementById('clearFloorBtn').classList.remove('show');
             }
         });
     }
