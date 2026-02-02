@@ -7,289 +7,242 @@
     <link rel="icon" href="favicon.ico">
     <style>
         @import url("https://unpkg.com/papercss@1.9.2/dist/paper.css");
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             min-height: 100vh;
-            background: #0a0a12;
-            color: #c0e0ff;
-            font-family: 'Rajdhani', sans-serif;
+            background: #f0f0f5;
+            color: #2a2a3a;
+            font-family: 'Inter', sans-serif;
             overflow-x: hidden;
+            position: relative;
         }
 
-        /* Animated grid background */
-        body::before {
+        /* Soft ambient light spots */
+        body::before,
+        body::after {
             content: '';
             position: fixed;
-            inset: 0;
-            background:
-                linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            animation: gridScroll 20s linear infinite;
+            border-radius: 50%;
+            pointer-events: none;
             z-index: 0;
+            filter: blur(100px);
         }
-        @keyframes gridScroll {
-            0% { transform: translate(0,0); }
-            100% { transform: translate(40px,40px); }
+        body::before {
+            width: 500px;
+            height: 500px;
+            top: -100px;
+            right: -100px;
+            background: radial-gradient(circle, rgba(180,160,255,0.2), transparent 70%);
+        }
+        body::after {
+            width: 600px;
+            height: 600px;
+            bottom: -150px;
+            left: -150px;
+            background: radial-gradient(circle, rgba(140,200,255,0.15), transparent 70%);
         }
 
-        /* Floating particles */
-        .particles {
+        /* Drifting motes of light */
+        .motes {
             position: fixed;
             inset: 0;
             z-index: 0;
             pointer-events: none;
             overflow: hidden;
         }
-        .particle {
+        .mote {
             position: absolute;
-            width: 2px;
-            height: 2px;
-            background: cyan;
             border-radius: 50%;
             opacity: 0;
-            animation: floatUp linear infinite;
+            animation: drift linear infinite;
         }
-        @keyframes floatUp {
-            0% { opacity: 0; transform: translateY(100vh) scale(0); }
-            10% { opacity: 0.8; }
-            90% { opacity: 0.3; }
-            100% { opacity: 0; transform: translateY(-10vh) scale(1.5); }
+        @keyframes drift {
+            0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+            15% { opacity: 0.6; }
+            85% { opacity: 0.3; }
+            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
         }
 
-        /* Header area */
+        /* Header */
         .header {
             position: relative;
             z-index: 1;
             text-align: center;
-            padding: 60px 20px 20px;
+            padding: 70px 20px 10px;
         }
-
         .header h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            font-weight: 900;
-            color: transparent;
-            background: linear-gradient(135deg, #00ffff, #a855f7, #00ffff);
-            background-size: 200% 200%;
-            -webkit-background-clip: text;
-            background-clip: text;
-            animation: shiftGradient 4s ease infinite;
-            text-shadow: 0 0 40px rgba(0,255,255,0.3);
-            margin-bottom: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+            font-weight: 700;
+            color: #3a3a5c;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
         }
-        @keyframes shiftGradient {
-            0%,100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
         .header .subtitle {
-            font-size: 1rem;
-            color: rgba(0,255,255,0.5);
-            letter-spacing: 4px;
+            font-size: 0.9rem;
+            font-weight: 300;
+            color: #8888aa;
+            letter-spacing: 2px;
             text-transform: uppercase;
         }
 
-        /* Cat mascot */
-        .cat-container {
+        /* Cat mascot - holographic ghost */
+        .cat-area {
             position: relative;
             z-index: 1;
             display: flex;
-            justify-content: center;
-            margin: 10px auto 30px;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px auto 10px;
         }
-        .cyber-cat {
-            position: relative;
-            width: 160px;
-            height: 160px;
-            filter: drop-shadow(0 0 20px rgba(0,255,255,0.4)) drop-shadow(0 0 60px rgba(168,85,247,0.2));
-            animation: catFloat 6s ease-in-out infinite;
+        .ghost-cat {
+            width: 150px;
+            height: 150px;
+            animation: gentleFloat 7s ease-in-out infinite;
+            filter: drop-shadow(0 4px 20px rgba(140,130,220,0.25));
         }
-        @keyframes catFloat {
-            0%,100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        @keyframes gentleFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
         }
-        .cyber-cat svg {
-            width: 100%;
-            height: 100%;
-        }
+        .ghost-cat svg { width: 100%; height: 100%; }
 
         .cat-speech {
-            position: absolute;
-            bottom: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,255,255,0.08);
-            border: 1px solid rgba(0,255,255,0.2);
-            border-radius: 20px;
-            padding: 8px 20px;
-            font-size: 0.85rem;
-            color: rgba(0,255,255,0.7);
-            white-space: nowrap;
-            animation: speechPulse 3s ease-in-out infinite;
-        }
-        @keyframes speechPulse {
-            0%,100% { opacity: 0.7; }
-            50% { opacity: 1; }
+            margin-top: 8px;
+            padding: 7px 18px;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(160,150,210,0.2);
+            border-radius: 18px;
+            font-size: 0.82rem;
+            font-style: italic;
+            color: #7a7a9e;
+            transition: opacity 0.4s;
         }
 
         /* Gallery grid */
         .gallery {
             position: relative;
             z-index: 1;
-            max-width: 1200px;
-            margin: 40px auto;
+            max-width: 1100px;
+            margin: 30px auto;
             padding: 0 20px 60px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 22px;
         }
 
-        /* Portal card */
+        /* Card */
         .portal-card {
-            position: relative;
-            background: rgba(10,15,30,0.8);
-            border: 1px solid rgba(0,255,255,0.15);
-            border-radius: 16px;
+            background: rgba(255,255,255,0.55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(180,175,220,0.2);
+            border-radius: 14px;
             overflow: hidden;
             text-decoration: none;
             color: inherit;
             display: flex;
             flex-direction: column;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
+            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
         }
         .portal-card:hover {
-            transform: translateY(-6px) scale(1.02);
-            border-color: rgba(0,255,255,0.5);
+            transform: translateY(-4px);
+            border-color: rgba(160,140,240,0.35);
             box-shadow:
-                0 0 20px rgba(0,255,255,0.15),
-                0 20px 60px rgba(0,0,0,0.4),
-                inset 0 0 60px rgba(0,255,255,0.03);
-        }
-        .portal-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(0,255,255,0.05), transparent 50%, rgba(168,85,247,0.05));
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* Scan line effect on hover */
-        .portal-card::after {
-            content: '';
-            position: absolute;
-            top: -100%;
-            left: 0;
-            right: 0;
-            height: 200%;
-            background: linear-gradient(transparent, rgba(0,255,255,0.04), transparent);
-            pointer-events: none;
-            z-index: 1;
-            transition: top 0.6s ease;
-        }
-        .portal-card:hover::after {
-            top: 100%;
+                0 12px 40px rgba(140,130,200,0.12),
+                0 2px 10px rgba(140,130,200,0.08);
         }
 
         .card-thumbnail {
-            width: 100%;
-            height: 180px;
-            background: linear-gradient(135deg, #0d1525 0%, #121a30 100%);
+            height: 150px;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             overflow: hidden;
+            background: linear-gradient(135deg, rgba(230,225,255,0.5), rgba(220,235,255,0.5));
         }
         .card-thumbnail .icon-glyph {
-            font-size: 3rem;
-            opacity: 0.6;
-            transition: all 0.4s ease;
+            font-size: 2.8rem;
+            transition: transform 0.4s ease;
         }
         .portal-card:hover .icon-glyph {
-            opacity: 1;
-            transform: scale(1.1);
-            filter: drop-shadow(0 0 12px rgba(0,255,255,0.5));
+            transform: scale(1.15);
         }
-        /* Holographic ring in thumbnail */
+        /* Soft ring */
         .card-thumbnail::after {
             content: '';
             position: absolute;
-            width: 100px;
-            height: 100px;
-            border: 1px solid rgba(0,255,255,0.1);
+            width: 70px;
+            height: 70px;
+            border: 1px solid rgba(160,150,220,0.15);
             border-radius: 50%;
-            animation: ringPulse 4s ease-in-out infinite;
+            animation: softRing 5s ease-in-out infinite;
         }
-        @keyframes ringPulse {
-            0%,100% { transform: scale(0.8); opacity: 0.3; }
+        @keyframes softRing {
+            0%,100% { transform: scale(0.9); opacity: 0.4; }
             50% { transform: scale(1.2); opacity: 0.1; }
         }
 
         .card-body {
-            padding: 20px;
+            padding: 18px;
             flex: 1;
             display: flex;
             flex-direction: column;
         }
         .card-body h3 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1rem;
-            font-weight: 700;
-            color: #00ffff;
-            margin-bottom: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #3a3a5c;
+            margin-bottom: 6px;
         }
         .card-body p {
-            font-size: 0.9rem;
-            color: rgba(192,224,255,0.6);
-            line-height: 1.5;
+            font-size: 0.85rem;
+            color: #8888aa;
+            line-height: 1.55;
             flex: 1;
         }
+
         .card-footer {
-            padding: 12px 20px;
-            border-top: 1px solid rgba(0,255,255,0.08);
+            padding: 10px 18px;
+            border-top: 1px solid rgba(180,175,220,0.12);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 0.8rem;
-            color: rgba(0,255,255,0.4);
+            font-size: 0.75rem;
+            color: #aaaacc;
         }
-        .card-footer .enter-label {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.7rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            transition: color 0.3s;
-        }
-        .portal-card:hover .enter-label {
-            color: #00ffff;
-        }
-        .card-footer .arrow {
-            transition: transform 0.3s;
-        }
-        .portal-card:hover .arrow {
-            transform: translateX(4px);
-        }
-
-        /* Status dot */
         .status-dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
-            background: #00ff88;
+            background: #8cc8a0;
             display: inline-block;
-            margin-right: 6px;
-            animation: dotPulse 2s ease-in-out infinite;
+            margin-right: 5px;
+            animation: dotPulse 2.5s ease-in-out infinite;
         }
         @keyframes dotPulse {
             0%,100% { opacity: 1; }
-            50% { opacity: 0.4; }
+            50% { opacity: 0.35; }
         }
+        .enter-label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #aaaacc;
+            transition: color 0.3s;
+        }
+        .portal-card:hover .enter-label { color: #7a6abf; }
+        .arrow { transition: transform 0.3s; display: inline-block; }
+        .portal-card:hover .arrow { transform: translateX(3px); }
 
         @media (max-width: 680px) {
             .gallery { grid-template-columns: 1fr; }
@@ -300,101 +253,123 @@
 <body>
 <script src="nav-box.js"></script>
 
-<!-- Floating particles -->
-<div class="particles" id="particles"></div>
+<div class="motes" id="motes"></div>
 
 <!-- Header -->
 <div class="header">
     <h1>Virtual Intelligence Portals</h1>
-    <div class="subtitle">Hosted on HuggingFace Spaces</div>
+    <div class="subtitle">HuggingFace Spaces</div>
 </div>
 
-<!-- Cybernetic Cat Mascot -->
-<div class="cat-container">
-    <div class="cyber-cat">
+<!-- Ghost Cat Mascot -->
+<div class="cat-area">
+    <div class="ghost-cat">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <!-- Holographic glow base -->
             <defs>
-                <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stop-color="rgba(0,255,255,0.15)"/>
-                    <stop offset="100%" stop-color="transparent"/>
-                </radialGradient>
-                <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#00ffff" stop-opacity="0.7"/>
-                    <stop offset="50%" stop-color="#a855f7" stop-opacity="0.5"/>
-                    <stop offset="100%" stop-color="#00ffff" stop-opacity="0.7"/>
+                <linearGradient id="catBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#b8a9e8" stop-opacity="0.6"/>
+                    <stop offset="50%" stop-color="#9ab4e8" stop-opacity="0.45"/>
+                    <stop offset="100%" stop-color="#c0b0f0" stop-opacity="0.55"/>
                 </linearGradient>
-                <filter id="hologram">
-                    <feGaussianBlur stdDeviation="1" result="blur"/>
+                <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#a8c0f0" stop-opacity="0.7"/>
+                    <stop offset="100%" stop-color="#a8c0f0" stop-opacity="0"/>
+                </radialGradient>
+                <filter id="ghostBlur">
+                    <feGaussianBlur stdDeviation="0.8" result="blur"/>
                     <feComposite in="SourceGraphic" in2="blur" operator="over"/>
                 </filter>
+                <!-- Holographic shimmer -->
+                <linearGradient id="shimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="rgba(180,160,240,0)"/>
+                    <stop offset="40%" stop-color="rgba(180,170,240,0.15)"/>
+                    <stop offset="60%" stop-color="rgba(160,200,250,0.15)"/>
+                    <stop offset="100%" stop-color="rgba(180,160,240,0)"/>
+                    <animate attributeName="x1" values="-100%;100%" dur="4s" repeatCount="indefinite"/>
+                    <animate attributeName="x2" values="0%;200%" dur="4s" repeatCount="indefinite"/>
+                </linearGradient>
             </defs>
-            <circle cx="100" cy="100" r="90" fill="url(#glow)"/>
-            <!-- Cat body outline - holographic wireframe style -->
-            <g filter="url(#hologram)" stroke="url(#bodyGrad)" stroke-width="1.5" fill="none" opacity="0.9">
+
+            <!-- Soft ambient glow behind cat -->
+            <ellipse cx="100" cy="110" rx="60" ry="45" fill="url(#eyeGlow)" opacity="0.3"/>
+
+            <!-- Cat shape - translucent, ghostly -->
+            <g filter="url(#ghostBlur)" opacity="0.85">
                 <!-- Ears -->
-                <polygon points="55,70 40,30 75,55" stroke-linejoin="round"/>
-                <polygon points="145,70 160,30 125,55" stroke-linejoin="round"/>
-                <!-- Inner ears -->
-                <line x1="48" y1="45" x2="62" y2="60" opacity="0.4"/>
-                <line x1="152" y1="45" x2="138" y2="60" opacity="0.4"/>
+                <polygon points="55,72 42,32 74,57" fill="url(#catBody)" stroke="rgba(160,140,220,0.35)" stroke-width="1" stroke-linejoin="round"/>
+                <polygon points="145,72 158,32 126,57" fill="url(#catBody)" stroke="rgba(160,140,220,0.35)" stroke-width="1" stroke-linejoin="round"/>
+                <!-- Inner ear wisps -->
+                <line x1="50" y1="48" x2="62" y2="62" stroke="rgba(180,170,230,0.25)" stroke-width="0.8"/>
+                <line x1="150" y1="48" x2="138" y2="62" stroke="rgba(180,170,230,0.25)" stroke-width="0.8"/>
+
                 <!-- Head -->
-                <ellipse cx="100" cy="85" rx="52" ry="42"/>
-                <!-- Circuit lines on head -->
-                <line x1="70" y1="70" x2="60" y2="65" opacity="0.3"/>
-                <line x1="130" y1="70" x2="140" y2="65" opacity="0.3"/>
-                <line x1="100" y1="60" x2="100" y2="50" opacity="0.3"/>
-                <!-- Eyes - glowing -->
-                <ellipse cx="80" cy="82" rx="10" ry="8" fill="rgba(0,255,255,0.2)" stroke="#00ffff" stroke-width="1.5">
-                    <animate attributeName="ry" values="8;1;8" dur="4s" repeatCount="indefinite" begin="2s"/>
+                <ellipse cx="100" cy="86" rx="50" ry="40" fill="url(#catBody)" stroke="rgba(160,140,220,0.3)" stroke-width="1"/>
+
+                <!-- Holographic shimmer band across head -->
+                <ellipse cx="100" cy="86" rx="50" ry="40" fill="url(#shimmer)"/>
+
+                <!-- Eyes - soft luminous -->
+                <ellipse cx="80" cy="83" rx="9" ry="7" fill="rgba(165,155,230,0.2)" stroke="rgba(140,130,210,0.5)" stroke-width="1">
+                    <animate attributeName="ry" values="7;1;7" dur="5s" repeatCount="indefinite" begin="3s"/>
                 </ellipse>
-                <ellipse cx="120" cy="82" rx="10" ry="8" fill="rgba(0,255,255,0.2)" stroke="#00ffff" stroke-width="1.5">
-                    <animate attributeName="ry" values="8;1;8" dur="4s" repeatCount="indefinite" begin="2s"/>
+                <ellipse cx="120" cy="83" rx="9" ry="7" fill="rgba(165,155,230,0.2)" stroke="rgba(140,130,210,0.5)" stroke-width="1">
+                    <animate attributeName="ry" values="7;1;7" dur="5s" repeatCount="indefinite" begin="3s"/>
                 </ellipse>
-                <!-- Pupils -->
-                <ellipse cx="80" cy="82" rx="4" ry="6" fill="#00ffff" opacity="0.8">
-                    <animate attributeName="ry" values="6;1;6" dur="4s" repeatCount="indefinite" begin="2s"/>
+                <!-- Pupils - gentle glow -->
+                <ellipse cx="80" cy="83" rx="3.5" ry="5.5" fill="rgba(120,110,190,0.6)">
+                    <animate attributeName="ry" values="5.5;1;5.5" dur="5s" repeatCount="indefinite" begin="3s"/>
                 </ellipse>
-                <ellipse cx="120" cy="82" rx="4" ry="6" fill="#00ffff" opacity="0.8">
-                    <animate attributeName="ry" values="6;1;6" dur="4s" repeatCount="indefinite" begin="2s"/>
+                <ellipse cx="120" cy="83" rx="3.5" ry="5.5" fill="rgba(120,110,190,0.6)">
+                    <animate attributeName="ry" values="5.5;1;5.5" dur="5s" repeatCount="indefinite" begin="3s"/>
                 </ellipse>
+                <!-- Eye light reflections -->
+                <circle cx="82" cy="80" r="1.5" fill="rgba(220,215,255,0.6)">
+                    <animate attributeName="r" values="1.5;0.3;1.5" dur="5s" repeatCount="indefinite" begin="3s"/>
+                </circle>
+                <circle cx="122" cy="80" r="1.5" fill="rgba(220,215,255,0.6)">
+                    <animate attributeName="r" values="1.5;0.3;1.5" dur="5s" repeatCount="indefinite" begin="3s"/>
+                </circle>
+
                 <!-- Nose -->
-                <polygon points="100,92 96,97 104,97" fill="rgba(168,85,247,0.4)" stroke="#a855f7" stroke-width="1"/>
+                <polygon points="100,93 97,97 103,97" fill="rgba(190,170,210,0.4)" stroke="rgba(170,155,200,0.4)" stroke-width="0.8"/>
                 <!-- Mouth -->
-                <path d="M96,100 Q100,105 104,100" opacity="0.5"/>
-                <!-- Whiskers -->
-                <line x1="70" y1="93" x2="40" y2="88" opacity="0.4"/>
-                <line x1="70" y1="96" x2="38" y2="98" opacity="0.4"/>
-                <line x1="70" y1="99" x2="42" y2="108" opacity="0.4"/>
-                <line x1="130" y1="93" x2="160" y2="88" opacity="0.4"/>
-                <line x1="130" y1="96" x2="162" y2="98" opacity="0.4"/>
-                <line x1="130" y1="99" x2="158" y2="108" opacity="0.4"/>
+                <path d="M97,100 Q100,104 103,100" fill="none" stroke="rgba(170,155,200,0.35)" stroke-width="0.8"/>
+
+                <!-- Whiskers - faint, wispy -->
+                <line x1="72" y1="94" x2="42" y2="90" stroke="rgba(170,160,220,0.2)" stroke-width="0.6"/>
+                <line x1="72" y1="97" x2="40" y2="98" stroke="rgba(170,160,220,0.25)" stroke-width="0.6"/>
+                <line x1="72" y1="100" x2="44" y2="108" stroke="rgba(170,160,220,0.2)" stroke-width="0.6"/>
+                <line x1="128" y1="94" x2="158" y2="90" stroke="rgba(170,160,220,0.2)" stroke-width="0.6"/>
+                <line x1="128" y1="97" x2="160" y2="98" stroke="rgba(170,160,220,0.25)" stroke-width="0.6"/>
+                <line x1="128" y1="100" x2="156" y2="108" stroke="rgba(170,160,220,0.2)" stroke-width="0.6"/>
+
                 <!-- Body -->
-                <path d="M65,120 Q60,160 80,170 L120,170 Q140,160 135,120" stroke-linejoin="round"/>
-                <!-- Circuit patterns on body -->
-                <circle cx="90" cy="145" r="3" opacity="0.3" fill="rgba(0,255,255,0.2)"/>
-                <circle cx="110" cy="140" r="3" opacity="0.3" fill="rgba(0,255,255,0.2)"/>
-                <line x1="90" y1="148" x2="90" y2="158" opacity="0.2"/>
-                <line x1="110" y1="143" x2="110" y2="158" opacity="0.2"/>
-                <line x1="90" y1="145" x2="110" y2="140" opacity="0.15"/>
-                <!-- Tail -->
-                <path d="M135,155 Q160,140 165,115 Q168,100 155,95" stroke-linecap="round" opacity="0.6">
-                    <animate attributeName="d" values="M135,155 Q160,140 165,115 Q168,100 155,95;M135,155 Q158,138 168,118 Q172,102 158,92;M135,155 Q160,140 165,115 Q168,100 155,95" dur="5s" repeatCount="indefinite"/>
+                <path d="M66,120 Q62,158 82,168 L118,168 Q138,158 134,120" fill="url(#catBody)" stroke="rgba(160,140,220,0.3)" stroke-width="1" stroke-linejoin="round"/>
+                <!-- Shimmer on body -->
+                <path d="M66,120 Q62,158 82,168 L118,168 Q138,158 134,120 Z" fill="url(#shimmer)"/>
+
+                <!-- Subtle inner markings - like light refracting through -->
+                <circle cx="92" cy="143" r="2.5" fill="rgba(180,170,240,0.15)"/>
+                <circle cx="108" cy="138" r="2.5" fill="rgba(160,190,240,0.15)"/>
+                <path d="M92,145 Q100,150 108,140" fill="none" stroke="rgba(170,165,230,0.1)" stroke-width="0.5"/>
+
+                <!-- Tail - flowing, ethereal -->
+                <path d="M134,153 Q158,138 162,114 Q164,100 152,96" fill="none" stroke="url(#catBody)" stroke-width="3" stroke-linecap="round" opacity="0.6">
+                    <animate attributeName="d" values="M134,153 Q158,138 162,114 Q164,100 152,96;M134,153 Q155,135 166,116 Q170,100 156,93;M134,153 Q158,138 162,114 Q164,100 152,96" dur="6s" repeatCount="indefinite"/>
                 </path>
+
                 <!-- Paws -->
-                <ellipse cx="85" cy="172" rx="10" ry="4"/>
-                <ellipse cx="115" cy="172" rx="10" ry="4"/>
+                <ellipse cx="87" cy="170" rx="9" ry="3.5" fill="url(#catBody)" stroke="rgba(160,140,220,0.2)" stroke-width="0.8"/>
+                <ellipse cx="113" cy="170" rx="9" ry="3.5" fill="url(#catBody)" stroke="rgba(160,140,220,0.2)" stroke-width="0.8"/>
             </g>
-            <!-- Data stream from eyes -->
-            <g opacity="0.3">
-                <rect x="78" y="90" width="1" height="3" fill="#00ffff">
-                    <animate attributeName="y" values="90;110;90" dur="2s" repeatCount="indefinite"/>
-                    <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/>
-                </rect>
-                <rect x="122" y="90" width="1" height="3" fill="#00ffff">
-                    <animate attributeName="y" values="90;110;90" dur="2.3s" repeatCount="indefinite"/>
-                    <animate attributeName="opacity" values="0.5;0;0.5" dur="2.3s" repeatCount="indefinite"/>
-                </rect>
+
+            <!-- Ghost transparency effect - faint scanlines -->
+            <g opacity="0.04">
+                <line x1="50" y1="70" x2="150" y2="70" stroke="#8080c0" stroke-width="0.5"/>
+                <line x1="50" y1="90" x2="150" y2="90" stroke="#8080c0" stroke-width="0.5"/>
+                <line x1="50" y1="110" x2="150" y2="110" stroke="#8080c0" stroke-width="0.5"/>
+                <line x1="50" y1="130" x2="150" y2="130" stroke="#8080c0" stroke-width="0.5"/>
+                <line x1="50" y1="150" x2="150" y2="150" stroke="#8080c0" stroke-width="0.5"/>
             </g>
         </svg>
     </div>
@@ -402,7 +377,7 @@
 </div>
 
 <!-- ============================================================
-     GALLERY CARDS - Edit the spaces array below to add/remove cards.
+     GALLERY CARDS - Edit the SPACES array below to add/remove cards.
      Each entry needs:
        title       - Display name on the card
        description - Short blurb shown below the title
@@ -437,7 +412,7 @@ const SPACES = [
         icon: "\u{2728}",
         url: "https://huggingface.co/spaces/YOUR_USER/YOUR_SPACE_3"
     },
-    // To add more, copy and paste a block like:
+    // To add more, copy and paste a block:
     // {
     //     title: "My Cool Space",
     //     description: "What this space does",
@@ -450,10 +425,10 @@ const SPACES = [
 const CAT_LINES = [
     "step through the portals...",
     "the virtual minds await you",
-    "I can see the data streams...",
-    "each portal holds intelligence",
-    "connect to something beyond...",
-    "the machine hums for you",
+    "I drift between the layers...",
+    "each portal holds an intelligence",
+    "reach through... I'll guide you",
+    "I live where the signals cross",
     "go ahead... enter a portal",
     "I am the ghost in this machine",
 ];
@@ -490,16 +465,24 @@ SPACES.forEach(space => {
     gallery.appendChild(card);
 });
 
-// Generate floating particles
-const particlesEl = document.getElementById('particles');
-for (let i = 0; i < 30; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    p.style.left = Math.random() * 100 + '%';
-    p.style.animationDuration = (6 + Math.random() * 10) + 's';
-    p.style.animationDelay = (Math.random() * 10) + 's';
-    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
-    particlesEl.appendChild(p);
+// Generate drifting motes of light
+const motesEl = document.getElementById('motes');
+for (let i = 0; i < 20; i++) {
+    const m = document.createElement('div');
+    m.className = 'mote';
+    m.style.left = Math.random() * 100 + '%';
+    m.style.top = Math.random() * 100 + '%';
+    m.style.setProperty('--dx', (Math.random() * 80 - 40) + 'px');
+    m.style.setProperty('--dy', (Math.random() * -120 - 40) + 'px');
+    m.style.animationDuration = (8 + Math.random() * 14) + 's';
+    m.style.animationDelay = (Math.random() * 12) + 's';
+    const size = 2 + Math.random() * 4;
+    m.style.width = size + 'px';
+    m.style.height = size + 'px';
+    // Soft pastel colors
+    const colors = ['rgba(180,165,240,0.35)', 'rgba(150,190,240,0.3)', 'rgba(200,180,250,0.3)', 'rgba(170,210,240,0.25)'];
+    m.style.background = colors[Math.floor(Math.random() * colors.length)];
+    motesEl.appendChild(m);
 }
 </script>
 

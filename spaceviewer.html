@@ -6,15 +6,15 @@
     <title>DimTools - Space Viewer</title>
     <link rel="icon" href="favicon.ico">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             height: 100vh;
-            background: #0a0a12;
-            color: #c0e0ff;
-            font-family: 'Rajdhani', sans-serif;
+            background: #f0f0f5;
+            color: #2a2a3a;
+            font-family: 'Inter', sans-serif;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -25,8 +25,10 @@
             align-items: center;
             gap: 16px;
             padding: 10px 20px 10px 70px;
-            background: rgba(10,15,30,0.95);
-            border-bottom: 1px solid rgba(0,255,255,0.12);
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(180,175,220,0.15);
             flex-shrink: 0;
             z-index: 10;
         }
@@ -35,27 +37,29 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 16px;
-            background: rgba(0,255,255,0.06);
-            border: 1px solid rgba(0,255,255,0.2);
+            padding: 6px 14px;
+            background: rgba(140,130,200,0.08);
+            border: 1px solid rgba(160,150,220,0.2);
             border-radius: 8px;
-            color: #00ffff;
+            color: #6a6a9e;
             text-decoration: none;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
             transition: all 0.3s;
         }
         .back-btn:hover {
-            background: rgba(0,255,255,0.12);
-            border-color: rgba(0,255,255,0.4);
+            background: rgba(140,130,200,0.14);
+            border-color: rgba(160,150,220,0.35);
+            color: #4a4a7e;
         }
 
         .topbar-title {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Space Grotesk', sans-serif;
             font-size: 0.85rem;
-            color: rgba(0,255,255,0.7);
+            font-weight: 500;
+            color: #4a4a6e;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -67,14 +71,14 @@
             align-items: center;
             gap: 6px;
             font-size: 0.75rem;
-            color: rgba(0,255,255,0.4);
+            color: #9999bb;
         }
         .topbar-status .dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
-            background: #00ff88;
-            animation: pulse 2s ease-in-out infinite;
+            background: #8cc8a0;
+            animation: pulse 2.5s ease-in-out infinite;
         }
         @keyframes pulse {
             0%,100% { opacity: 1; }
@@ -85,7 +89,6 @@
             flex: 1;
             position: relative;
         }
-
         .iframe-container iframe {
             width: 100%;
             height: 100%;
@@ -95,12 +98,12 @@
         .loading-overlay {
             position: absolute;
             inset: 0;
-            background: #0a0a12;
+            background: #f0f0f5;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 16px;
+            gap: 14px;
             z-index: 5;
             transition: opacity 0.5s;
         }
@@ -109,22 +112,20 @@
             pointer-events: none;
         }
         .loading-ring {
-            width: 48px;
-            height: 48px;
-            border: 2px solid rgba(0,255,255,0.1);
-            border-top-color: #00ffff;
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(160,150,220,0.15);
+            border-top-color: #a090d0;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .loading-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.75rem;
-            color: rgba(0,255,255,0.5);
-            letter-spacing: 3px;
-            text-transform: uppercase;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: #9999bb;
+            letter-spacing: 1px;
         }
 
         .error-msg {
@@ -138,11 +139,12 @@
             gap: 12px;
         }
         .error-msg h2 {
-            font-family: 'Orbitron', monospace;
-            color: #ff4488;
-            font-size: 1.2rem;
+            font-family: 'Space Grotesk', sans-serif;
+            color: #6a5a8e;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
-        .error-msg p { color: rgba(192,224,255,0.5); }
+        .error-msg p { color: #9999bb; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -182,7 +184,6 @@ if (!spaceUrl) {
     `;
 } else {
     const iframe = document.createElement('iframe');
-    // For HuggingFace Spaces, append ?embed=true if not already present
     let embedUrl = spaceUrl;
     if (embedUrl.includes('huggingface.co/spaces/') && !embedUrl.includes('?')) {
         embedUrl += '?embed=true';
@@ -193,7 +194,6 @@ if (!spaceUrl) {
     iframe.addEventListener('load', () => {
         overlay.classList.add('hidden');
     });
-    // Fallback hide after 8 seconds
     setTimeout(() => overlay.classList.add('hidden'), 8000);
     container.appendChild(iframe);
 }
