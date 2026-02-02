@@ -748,7 +748,15 @@
                 loadUnitPdf(key);
             }
         } catch (err) {
-            showUploadStatus('Upload failed. File may be too large (max ~5MB).', 'error');
+            console.error('Upload error:', err);
+            const msg = (err && err.message) ? err.message : 'Unknown error';
+            if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('denied')) {
+                showUploadStatus('Upload failed: permission denied. Check Firebase rules.', 'error');
+            } else if (msg.toLowerCase().includes('size') || msg.toLowerCase().includes('large') || msg.toLowerCase().includes('payload')) {
+                showUploadStatus('Upload failed. File may be too large (max ~5MB).', 'error');
+            } else {
+                showUploadStatus('Upload failed: ' + msg, 'error');
+            }
         }
     }
 
