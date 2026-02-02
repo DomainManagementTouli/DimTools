@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dim's Flower Reviews</title>
+    <link rel="icon" href="favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Raleway:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --gold: #c9a84c;
+            --gold-light: #e8d48b;
+            --gold-dark: #8a6d1b;
+            --bg-deep: #0a0a0f;
+            --bg-card: rgba(15, 15, 25, 0.85);
+            --text-primary: #e8e4dc;
+            --text-muted: #9a968e;
+            --accent-glow: rgba(201, 168, 76, 0.4);
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        body {
+            font-family: 'Raleway', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 20%, rgba(201,168,76,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(120,90,40,0.05) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 50% 50%, rgba(30,25,15,0.3) 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            width: 2px; height: 2px;
+            background: var(--gold);
+            border-radius: 50%;
+            opacity: 0;
+            animation: drift linear infinite;
+        }
+        @keyframes drift {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) translateX(40px); opacity: 0; }
+        }
+
+        /* Header */
+        .header {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 60px 20px 40px;
+        }
+
+        .lotus-icon {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            z-index: 100;
+            width: 38px;
+            height: 38px;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 6px rgba(201,168,76,0.5));
+            transition: opacity 0.3s, filter 0.3s;
+        }
+        .lotus-icon:hover {
+            opacity: 1;
+            filter: drop-shadow(0 0 12px rgba(201,168,76,0.8));
+        }
+
+        .title {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: clamp(2rem, 5vw, 3.4rem);
+            letter-spacing: 0.15em;
+            color: var(--gold-light);
+            text-shadow: 0 0 30px rgba(201,168,76,0.3);
+            position: relative;
+            display: inline-block;
+        }
+        .title::after {
+            content: '';
+            display: block;
+            width: 60%;
+            height: 1px;
+            margin: 16px auto 0;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        /* Gallery grid */
+        .gallery {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 36px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 40px 80px;
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(201,168,76,0.12);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.45s cubic-bezier(0.23,1,0.32,1),
+                        box-shadow 0.45s cubic-bezier(0.23,1,0.32,1),
+                        border-color 0.45s ease;
+            backdrop-filter: blur(12px);
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 17px;
+            padding: 1px;
+            background: linear-gradient(135deg, transparent 30%, rgba(201,168,76,0.15) 50%, transparent 70%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.45s ease;
+            pointer-events: none;
+        }
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.5),
+                0 0 40px rgba(201,168,76,0.12),
+                inset 0 1px 0 rgba(201,168,76,0.1);
+            border-color: rgba(201,168,76,0.35);
+        }
+        .card:hover::before { opacity: 1; }
+
+        /* Glow edge effect on hover */
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            box-shadow: inset 0 0 30px rgba(201,168,76,0.0);
+            transition: box-shadow 0.45s ease;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .card:hover::after {
+            box-shadow: inset 0 0 30px rgba(201,168,76,0.06),
+                        0 0 15px rgba(201,168,76,0.08);
+        }
+
+        /* Image area */
+        .card-image {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            background: #111;
+        }
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s cubic-bezier(0.23,1,0.32,1), filter 0.6s ease;
+            filter: brightness(0.9) saturate(0.95);
+        }
+        .card:hover .card-image img {
+            transform: scale(1.06);
+            filter: brightness(1) saturate(1.05);
+        }
+        .card-image::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 40%;
+            background: linear-gradient(to top, var(--bg-card), transparent);
+            pointer-events: none;
+        }
+
+        /* Strain name overlay */
+        .strain-name {
+            position: absolute;
+            bottom: 12px;
+            left: 16px;
+            z-index: 3;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gold-light);
+            text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+            letter-spacing: 0.05em;
+        }
+        .strain-type {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            z-index: 3;
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(10,10,15,0.7);
+            border: 1px solid rgba(201,168,76,0.25);
+            color: var(--gold-light);
+            backdrop-filter: blur(6px);
+        }
+
+        /* Card body */
+        .card-body {
+            padding: 20px 22px 24px;
+        }
+
+        .description {
+            font-size: 0.84rem;
+            line-height: 1.65;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            font-weight: 300;
+        }
+
+        /* Terpene tags */
+        .terpenes-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: rgba(201,168,76,0.6);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .terpenes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+        .terpene-tag {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(201,168,76,0.06);
+            border: 1px solid rgba(201,168,76,0.15);
+            color: var(--gold-light);
+            font-weight: 400;
+            letter-spacing: 0.04em;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .card:hover .terpene-tag {
+            background: rgba(201,168,76,0.1);
+            border-color: rgba(201,168,76,0.3);
+        }
+
+        /* Divider */
+        .review-divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent);
+            margin-bottom: 16px;
+        }
+
+        /* Review section */
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+        .review-label {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--gold);
+            letter-spacing: 0.06em;
+        }
+        .review-date {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+        .review-date input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(201,168,76,0.15);
+            color: var(--text-muted);
+            font-family: 'Raleway', sans-serif;
+            font-size: 0.68rem;
+            width: 90px;
+            padding: 2px 0;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .review-date input:focus {
+            border-color: var(--gold);
+        }
+        .review-text {
+            width: 100%;
+            min-height: 60px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(201,168,76,0.1);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-family: 'Raleway', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 300;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .review-text:focus {
+            border-color: rgba(201,168,76,0.35);
+            box-shadow: 0 0 16px rgba(201,168,76,0.06);
+        }
+        .review-text::placeholder {
+            color: rgba(154,150,142,0.4);
+        }
+
+        /* Save indicator */
+        .save-indicator {
+            font-size: 0.6rem;
+            color: rgba(201,168,76,0.4);
+            text-align: right;
+            margin-top: 6px;
+            min-height: 14px;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+            transition: color 0.3s;
+        }
+        .save-indicator.saved {
+            color: rgba(201,168,76,0.7);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.35); }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .gallery {
+                grid-template-columns: 1fr;
+                padding: 16px;
+                gap: 24px;
+            }
+            .header { padding: 50px 16px 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Lotus icon -->
+<svg class="lotus-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 85C50 85 20 60 20 40C20 25 35 15 50 30C65 15 80 25 80 40C80 60 50 85 50 85Z" fill="none" stroke="#c9a84c" stroke-width="1.5" opacity="0.5"/>
+    <path d="M50 80C50 80 30 58 30 42C30 30 40 22 50 35C60 22 70 30 70 42C70 58 50 80 50 80Z" fill="none" stroke="#c9a84c" stroke-width="1.5" opacity="0.7"/>
+    <path d="M50 73C50 73 38 56 38 45C38 36 44 30 50 40C56 30 62 36 62 45C62 56 50 73 50 73Z" fill="rgba(201,168,76,0.15)" stroke="#c9a84c" stroke-width="1.5"/>
+    <path d="M50 30C45 18 35 22 35 32" fill="none" stroke="#c9a84c" stroke-width="1" opacity="0.4"/>
+    <path d="M50 30C55 18 65 22 65 32" fill="none" stroke="#c9a84c" stroke-width="1" opacity="0.4"/>
+    <path d="M50 35C42 20 28 28 30 38" fill="none" stroke="#c9a84c" stroke-width="1" opacity="0.3"/>
+    <path d="M50 35C58 20 72 28 70 38" fill="none" stroke="#c9a84c" stroke-width="1" opacity="0.3"/>
+</svg>
+
+<!-- Particles -->
+<div class="particles" id="particles"></div>
+
+<div class="header">
+    <h1 class="title">Dim's Flower Reviews</h1>
+</div>
+
+<div class="gallery" id="gallery"></div>
+
+<script>
+// ============================================================
+// PRODUCT DATA — Edit this array to add/change products
+// ============================================================
+const PRODUCTS = [
+    {
+        name: "Gelato #33",
+        type: "Hybrid",
+        image: "https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=600&q=80",
+        description: "A sweet and creamy strain with a dessert-like aroma. Delivers balanced euphoria with a relaxing body sensation that melts away tension.",
+        terpenes: ["Limonene", "Caryophyllene", "Humulene"],
+        review: "",
+        date: ""
+    },
+    {
+        name: "Blue Dream",
+        type: "Sativa",
+        image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=600&q=80",
+        description: "A legendary West Coast strain with sweet berry undertones. Known for gentle cerebral invigoration paired with full-body relaxation.",
+        terpenes: ["Myrcene", "Pinene", "Caryophyllene"],
+        review: "",
+        date: ""
+    },
+    {
+        name: "Purple Punch",
+        type: "Indica",
+        image: "https://images.unsplash.com/photo-1601055903647-ddf1ee9a94eb?w=600&q=80",
+        description: "Grape candy meets blueberry muffins in this heavy-hitting indica. A trichome-rich cultivar that delivers deep sedation and restful calm.",
+        terpenes: ["Linalool", "Caryophyllene", "Limonene"],
+        review: "",
+        date: ""
+    },
+    {
+        name: "Wedding Cake",
+        type: "Hybrid",
+        image: "https://images.unsplash.com/photo-1602168289674-31ce62012255?w=600&q=80",
+        description: "Rich and tangy with earthy pepper undertones. This potent hybrid offers a relaxing high with euphoric cerebral effects and a peppery exhale.",
+        terpenes: ["Limonene", "Caryophyllene", "Myrcene"],
+        review: "",
+        date: ""
+    },
+    {
+        name: "GMO Cookies",
+        type: "Indica",
+        image: "https://images.unsplash.com/photo-1567880905822-56f8e06fe630?w=600&q=80",
+        description: "Pungent garlic and diesel notes define this powerhouse. An intensely relaxing cultivar with heavy body effects and a savory, funky terpene profile.",
+        terpenes: ["Caryophyllene", "Myrcene", "Limonene"],
+        review: "",
+        date: ""
+    },
+    {
+        name: "Runtz",
+        type: "Hybrid",
+        image: "https://images.unsplash.com/photo-1589484280520-3cc0b1a1e02d?w=600&q=80",
+        description: "Fruity candy flavor with a creamy smooth finish. This balanced hybrid is known for its colorful buds and long-lasting euphoric high.",
+        terpenes: ["Linalool", "Limonene", "Caryophyllene"],
+        review: "",
+        date: ""
+    },
+    {
+        name: "Zkittlez",
+        type: "Indica",
+        image: "https://images.unsplash.com/photo-1536819114556-1e10f967fb61?w=600&q=80",
+        description: "A tropical burst of sweet fruit flavors reminiscent of the candy. Award-winning strain delivering calming, focused effects with a joyful mood boost.",
+        terpenes: ["Linalool", "Caryophyllene", "Humulene"],
+        review: "",
+        date: ""
+    },
+    {
+        name: "Jack Herer",
+        type: "Sativa",
+        image: "https://images.unsplash.com/photo-1597424216809-3ba4e58e9a10?w=600&q=80",
+        description: "A spicy, pine-scented classic named after the cannabis activist. Provides a clear-headed, creative buzz with blissful and energizing effects.",
+        terpenes: ["Terpinolene", "Pinene", "Myrcene"],
+        review: "",
+        date: ""
+    }
+];
+
+// ============================================================
+// Load saved reviews from localStorage
+// ============================================================
+const STORAGE_KEY = 'dim-flower-reviews';
+
+function loadSavedReviews() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        PRODUCTS.forEach(p => {
+            if (saved[p.name]) {
+                p.review = saved[p.name].review || '';
+                p.date = saved[p.name].date || '';
+            }
+        });
+    } catch(e) {}
+}
+
+function saveReview(name, review, date) {
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        saved[name] = { review, date };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    } catch(e) {}
+}
+
+loadSavedReviews();
+
+// ============================================================
+// Render gallery
+// ============================================================
+const gallery = document.getElementById('gallery');
+
+PRODUCTS.forEach((product, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+        <div class="card-image">
+            <img src="${product.image}" alt="${product.name}" loading="lazy"
+                 onerror="this.style.display='none'">
+            <div class="strain-name">${product.name}</div>
+            <div class="strain-type">${product.type}</div>
+        </div>
+        <div class="card-body">
+            <p class="description">${product.description}</p>
+            <div class="terpenes-label">Terpenes</div>
+            <div class="terpenes">
+                ${product.terpenes.map(t => `<span class="terpene-tag">${t}</span>`).join('')}
+            </div>
+            <div class="review-divider"></div>
+            <div class="review-header">
+                <span class="review-label">Dim's Review:</span>
+                <span class="review-date">Date: <input type="text" placeholder="MM/DD/YY" value="${product.date}" data-idx="${idx}" data-field="date"></span>
+            </div>
+            <textarea class="review-text" placeholder="Write your review..." data-idx="${idx}" data-field="review">${product.review}</textarea>
+            <div class="save-indicator" id="save-${idx}"></div>
+        </div>
+    `;
+    gallery.appendChild(card);
+});
+
+// Auto-save on input
+let saveTimers = {};
+document.querySelectorAll('[data-idx]').forEach(el => {
+    el.addEventListener('input', () => {
+        const idx = el.dataset.idx;
+        const field = el.dataset.field;
+        const value = field === 'review' ? el.value : el.value;
+        PRODUCTS[idx][field] = value;
+
+        const indicator = document.getElementById(`save-${idx}`);
+        indicator.textContent = 'saving...';
+        indicator.classList.remove('saved');
+
+        clearTimeout(saveTimers[idx]);
+        saveTimers[idx] = setTimeout(() => {
+            saveReview(PRODUCTS[idx].name, PRODUCTS[idx].review, PRODUCTS[idx].date);
+            indicator.textContent = 'saved';
+            indicator.classList.add('saved');
+            setTimeout(() => { indicator.textContent = ''; }, 2000);
+        }, 500);
+    });
+});
+
+// ============================================================
+// Floating particles
+// ============================================================
+const particlesContainer = document.getElementById('particles');
+for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (12 + Math.random() * 20) + 's';
+    p.style.animationDelay = (Math.random() * 15) + 's';
+    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+    particlesContainer.appendChild(p);
+}
+</script>
+
+<script src="nav-box.js"></script>
+</body>
+</html>
