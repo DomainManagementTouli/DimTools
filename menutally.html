@@ -471,7 +471,7 @@
 
             <!-- Needs Attention Noteboard -->
             <div class="section-card">
-                <div class="section-title">Needs Attention</div>
+                <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">Needs Attention <button id="clearAllNotesBtn" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;">Clear All Notes</button></div>
                 <div class="section-body">
                     <div class="noteboard-list" id="noteboardList">
                         <div class="no-notes">Loading notes...</div>
@@ -595,6 +595,17 @@
             document.getElementById('detailUploadMeta').textContent = 'No PDF uploaded yet.';
         } catch (err) {
             alert('Failed to clear: ' + (err.message || err));
+        }
+    });
+
+    // Clear All Notes
+    document.getElementById('clearAllNotesBtn').addEventListener('click', async function() {
+        if (!currentUser) return;
+        if (!confirm('Clear ALL notes? This cannot be undone.')) return;
+        try {
+            await db.ref('needsAttentionNotes').remove();
+        } catch (err) {
+            alert('Failed to clear notes: ' + (err.message || err));
         }
     });
 
