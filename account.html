@@ -287,6 +287,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
     const firebaseConfig = {
@@ -431,28 +432,32 @@
         this.value = '';
     });
 
-    // Subscription status
+    // Subscription status (Firestore via Stripe Extension)
+    const fsDb = firebase.firestore();
+
     function loadSubscriptionStatus(user) {
-        db.ref('users/' + user.uid + '/subscription/status').on('value', (snapshot) => {
-            const status = snapshot.val();
-            const el = document.getElementById('subStatus');
-            const action = document.getElementById('subAction');
-            if (status === 'active') {
-                el.textContent = 'Pro (Active)';
-                el.style.color = '#155724';
-                el.style.background = '#d4edda';
-                el.style.borderColor = '#c3e6cb';
-                action.textContent = 'Manage subscription';
-                action.href = 'subscribe.html';
-            } else {
-                el.textContent = 'Free';
-                el.style.color = '#856404';
-                el.style.background = '#fff3cd';
-                el.style.borderColor = '#ffeaa7';
-                action.textContent = 'Upgrade to Pro - $4.99/mo';
-                action.href = 'subscribe.html';
-            }
-        });
+        fsDb.collection('customers').doc(user.uid)
+            .collection('subscriptions')
+            .where('status', 'in', ['trialing', 'active'])
+            .onSnapshot((snapshot) => {
+                const el = document.getElementById('subStatus');
+                const action = document.getElementById('subAction');
+                if (!snapshot.empty) {
+                    el.textContent = 'Pro (Active)';
+                    el.style.color = '#155724';
+                    el.style.background = '#d4edda';
+                    el.style.borderColor = '#c3e6cb';
+                    action.textContent = 'Manage subscription';
+                    action.href = 'subscribe.html';
+                } else {
+                    el.textContent = 'Free';
+                    el.style.color = '#856404';
+                    el.style.background = '#fff3cd';
+                    el.style.borderColor = '#ffeaa7';
+                    action.textContent = 'Upgrade to Pro - $4.99/mo';
+                    action.href = 'subscribe.html';
+                }
+            });
     }
 
     // Sign out

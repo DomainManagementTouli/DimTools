@@ -236,18 +236,25 @@
     </div>
 </div>
 
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-    // ============================================================
-    // CONFIGURATION - Replace these with your actual values
-    // ============================================================
-    // After setting up Stripe + Firebase Cloud Functions, replace:
-    const STRIPE_CHECKOUT_FUNCTION_URL = 'YOUR_CLOUD_FUNCTION_URL/createCheckoutSession';
-    const STRIPE_PORTAL_FUNCTION_URL = 'YOUR_CLOUD_FUNCTION_URL/createPortalSession';
-    // ============================================================
+    /*
+     * This page uses the "Run Payments with Stripe" Firebase Extension.
+     * The extension automatically:
+     *   1. Creates Stripe customers for each Firebase Auth user
+     *   2. Creates Checkout Sessions when you write to Firestore
+     *   3. Syncs subscription status back to Firestore via webhooks
+     *
+     * Firestore structure (managed by the extension):
+     *   customers/{uid}/checkout_sessions/{id}  ← we write here to start checkout
+     *   customers/{uid}/subscriptions/{id}      ← extension writes subscription status here
+     */
+
+    const STRIPE_PRICE_ID = 'price_1SwZjZ8BurRvE3MDfj37cgWV';
 
     const firebaseConfig = {
         apiKey: "AIzaSyBKqak1hp_64YjINjBf3zNaq0kJbu1AhWM",
@@ -262,9 +269,10 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.database();
+    const fsDb = firebase.firestore();
 
     let currentUser = null;
+    let unsubscribeListener = null;
 
     function showMessage(text, type) {
         const msg = document.getElementById('subMessage');
@@ -282,23 +290,29 @@
             currentUser = null;
             document.getElementById('subscribeBtn').style.display = 'none';
             document.getElementById('loginPrompt').style.display = 'block';
+            if (unsubscribeListener) unsubscribeListener();
         }
     });
 
+    // Listen to the subscriptions sub-collection for this user
     function checkSubscriptionStatus(user) {
-        db.ref('users/' + user.uid + '/subscription').on('value', (snapshot) => {
-            const sub = snapshot.val();
-            if (sub && sub.status === 'active') {
-                document.getElementById('subscribedView').style.display = 'block';
-                document.getElementById('subscribeView').style.display = 'none';
-            } else {
-                document.getElementById('subscribedView').style.display = 'none';
-                document.getElementById('subscribeView').style.display = 'block';
-            }
-        });
+        unsubscribeListener = fsDb.collection('customers').doc(user.uid)
+            .collection('subscriptions')
+            .where('status', 'in', ['trialing', 'active'])
+            .onSnapshot((snapshot) => {
+                if (snapshot.empty) {
+                    // No active subscription
+                    document.getElementById('subscribedView').style.display = 'none';
+                    document.getElementById('subscribeView').style.display = 'block';
+                } else {
+                    // Has active subscription
+                    document.getElementById('subscribedView').style.display = 'block';
+                    document.getElementById('subscribeView').style.display = 'none';
+                }
+            });
     }
 
-    // Subscribe button - calls Cloud Function to create Stripe Checkout session
+    // Subscribe button: write a checkout_sessions doc → extension creates Stripe session → we redirect
     document.getElementById('subscribeBtn').addEventListener('click', async function() {
         if (!currentUser) return;
 
@@ -307,25 +321,27 @@
         btn.innerHTML = '<span class="spinner"></span> Redirecting to checkout...';
 
         try {
-            const idToken = await currentUser.getIdToken();
-            const response = await fetch(STRIPE_CHECKOUT_FUNCTION_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + idToken
-                },
-                body: JSON.stringify({
-                    returnUrl: window.location.origin + '/subscribe.html'
-                })
+            // Write a new checkout session document to Firestore
+            const docRef = await fsDb.collection('customers').doc(currentUser.uid)
+                .collection('checkout_sessions').add({
+                    price: STRIPE_PRICE_ID,
+                    success_url: window.location.origin + '/subscribe.html?success=true',
+                    cancel_url: window.location.origin + '/subscribe.html?canceled=true',
+                });
+
+            // Listen for the extension to populate the session URL
+            docRef.onSnapshot((snap) => {
+                const data = snap.data();
+                if (data.error) {
+                    showMessage('Checkout error: ' + data.error.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Subscribe - $4.99/month';
+                }
+                if (data.url) {
+                    // Redirect to Stripe Checkout
+                    window.location.assign(data.url);
+                }
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to create checkout session');
-            }
-
-            const data = await response.json();
-            // Redirect to Stripe Checkout
-            window.location.href = data.url;
         } catch (err) {
             showMessage('Failed to start checkout. Please try again.', 'error');
             btn.disabled = false;
@@ -333,7 +349,8 @@
         }
     });
 
-    // Manage subscription button - opens Stripe Customer Portal
+    // Manage subscription button: redirect to Stripe Customer Portal
+    // The extension creates a callable function ext-firestore-stripe-payments-createPortalLink
     document.getElementById('manageSubBtn').addEventListener('click', async function() {
         if (!currentUser) return;
 
@@ -342,24 +359,11 @@
         btn.textContent = 'Loading...';
 
         try {
-            const idToken = await currentUser.getIdToken();
-            const response = await fetch(STRIPE_PORTAL_FUNCTION_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + idToken
-                },
-                body: JSON.stringify({
-                    returnUrl: window.location.origin + '/subscribe.html'
-                })
+            const functionRef = firebase.functions().httpsCallable('ext-firestore-stripe-payments-createPortalLink');
+            const { data } = await functionRef({
+                returnUrl: window.location.origin + '/subscribe.html',
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to open portal');
-            }
-
-            const data = await response.json();
-            window.location.href = data.url;
+            window.location.assign(data.url);
         } catch (err) {
             showMessage('Failed to open subscription management. Please try again.', 'error');
             btn.disabled = false;
@@ -375,5 +379,7 @@
         showMessage('Checkout was canceled. You can try again anytime.', 'info');
     }
 </script>
+<!-- Firebase Functions SDK needed for the portal link callable -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 </body>
 </html>

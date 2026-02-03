@@ -490,6 +490,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
     const firebaseConfig = {
@@ -546,20 +547,27 @@
     let selectedUnitIndex = null;
     let unitPdfStatus = {}; // tracks which units have uploads
 
-    // ---- SUBSCRIPTION GATE ----
+    // ---- SUBSCRIPTION GATE (Firestore via Stripe Extension) ----
+    const fsDb = firebase.firestore();
+
     function checkSubscription(user) {
-        db.ref('users/' + user.uid + '/subscription/status').once('value', (snapshot) => {
-            const status = snapshot.val();
-            if (status === 'active') {
-                showMainApp(user);
-                buildSideMenu();
-                listenForAllUnitPdfs();
-                loadNoteboard();
-            } else {
-                // Not subscribed — redirect to subscribe page
+        fsDb.collection('customers').doc(user.uid)
+            .collection('subscriptions')
+            .where('status', 'in', ['trialing', 'active'])
+            .get()
+            .then((snapshot) => {
+                if (!snapshot.empty) {
+                    showMainApp(user);
+                    buildSideMenu();
+                    listenForAllUnitPdfs();
+                    loadNoteboard();
+                } else {
+                    window.location.href = 'subscribe.html';
+                }
+            })
+            .catch(() => {
                 window.location.href = 'subscribe.html';
-            }
-        });
+            });
     }
 
     // ---- AUTH ----
