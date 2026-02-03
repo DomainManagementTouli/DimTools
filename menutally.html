@@ -546,14 +546,27 @@
     let selectedUnitIndex = null;
     let unitPdfStatus = {}; // tracks which units have uploads
 
+    // ---- SUBSCRIPTION GATE ----
+    function checkSubscription(user) {
+        db.ref('users/' + user.uid + '/subscription/status').once('value', (snapshot) => {
+            const status = snapshot.val();
+            if (status === 'active') {
+                showMainApp(user);
+                buildSideMenu();
+                listenForAllUnitPdfs();
+                loadNoteboard();
+            } else {
+                // Not subscribed — redirect to subscribe page
+                window.location.href = 'subscribe.html';
+            }
+        });
+    }
+
     // ---- AUTH ----
     auth.onAuthStateChanged((user) => {
         if (user) {
             currentUser = user;
-            showMainApp(user);
-            buildSideMenu();
-            listenForAllUnitPdfs();
-            loadNoteboard();
+            checkSubscription(user);
         } else {
             currentUser = null;
             window.location.href = 'login.html?redirect=menutally.html';

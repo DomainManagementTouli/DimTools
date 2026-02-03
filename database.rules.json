@@ -1,0 +1,28 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid",
+        "subscription": {
+          ".write": false
+        },
+        "stripeCustomerId": {
+          ".write": false
+        }
+      }
+    },
+    "menuTallyUnits": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "dinnerScheduleData": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "needsAttentionNotes": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

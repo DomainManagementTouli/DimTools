@@ -336,12 +336,24 @@
         auth = firebase.auth();
         db = firebase.database();
 
+        // Subscription gate
+        function checkSubscription(user) {
+            db.ref('users/' + user.uid + '/subscription/status').once('value', (snapshot) => {
+                const status = snapshot.val();
+                if (status === 'active') {
+                    showMainApp(user);
+                    initializeDatabase();
+                } else {
+                    window.location.href = 'subscribe.html';
+                }
+            });
+        }
+
         // Auth state observer - redirect to centralized login if not authenticated
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
-                showMainApp(user);
-                initializeDatabase();
+                checkSubscription(user);
             } else {
                 currentUser = null;
                 window.location.href = 'login.html?redirect=livetimesheet.html';
