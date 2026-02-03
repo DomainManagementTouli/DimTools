@@ -285,6 +285,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <script>
         // Firebase Configuration
@@ -336,12 +337,32 @@
         auth = firebase.auth();
         db = firebase.database();
 
+        // Subscription gate (Firestore via Stripe Extension)
+        const fsDb = firebase.firestore();
+
+        function checkSubscription(user) {
+            fsDb.collection('customers').doc(user.uid)
+                .collection('subscriptions')
+                .where('status', 'in', ['trialing', 'active'])
+                .get()
+                .then((snapshot) => {
+                    if (!snapshot.empty) {
+                        showMainApp(user);
+                        initializeDatabase();
+                    } else {
+                        window.location.href = 'subscribe.html';
+                    }
+                })
+                .catch(() => {
+                    window.location.href = 'subscribe.html';
+                });
+        }
+
         // Auth state observer - redirect to centralized login if not authenticated
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
-                showMainApp(user);
-                initializeDatabase();
+                checkSubscription(user);
             } else {
                 currentUser = null;
                 window.location.href = 'login.html?redirect=livetimesheet.html';
