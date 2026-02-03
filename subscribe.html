@@ -374,7 +374,11 @@
     // Check for Stripe redirect success/cancel params
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
-        showMessage('Payment successful! Your subscription is being activated...', 'success');
+        showMessage('Payment successful! Redirecting to your account...', 'success');
+        // Redirect to account page after short delay
+        setTimeout(() => {
+            window.location.href = 'account.html';
+        }, 2000);
     } else if (urlParams.get('canceled') === 'true') {
         showMessage('Checkout was canceled. You can try again anytime.', 'info');
     }
