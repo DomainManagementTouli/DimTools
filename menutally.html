@@ -551,23 +551,29 @@
     const fsDb = firebase.firestore();
 
     function checkSubscription(user) {
-        fsDb.collection('customers').doc(user.uid)
+        let subscriptionConfirmed = false;
+        const unsubscribe = fsDb.collection('customers').doc(user.uid)
             .collection('subscriptions')
             .where('status', 'in', ['trialing', 'active'])
-            .get()
-            .then((snapshot) => {
-                if (!snapshot.empty) {
+            .onSnapshot((snapshot) => {
+                if (!snapshot.empty && !subscriptionConfirmed) {
+                    subscriptionConfirmed = true;
+                    unsubscribe();
                     showMainApp(user);
                     buildSideMenu();
                     listenForAllUnitPdfs();
                     loadNoteboard();
-                } else {
-                    window.location.href = 'subscribe.html';
                 }
-            })
-            .catch(() => {
-                window.location.href = 'subscribe.html';
+            }, () => {
+                window.location.href = 'subscribe.html?redirect=menutally.html';
             });
+        // Grace period for webhook processing before redirecting
+        setTimeout(() => {
+            if (!subscriptionConfirmed) {
+                unsubscribe();
+                window.location.href = 'subscribe.html?redirect=menutally.html';
+            }
+        }, 3000);
     }
 
     // ---- AUTH ----
