@@ -552,21 +552,33 @@
 
     function checkSubscription(user) {
         let subscriptionConfirmed = false;
-        const unsubscribe = fsDb.collection('customers').doc(user.uid)
+        const customerRef = fsDb.collection('customers').doc(user.uid);
+
+        function onConfirmed() {
+            if (subscriptionConfirmed) return;
+            subscriptionConfirmed = true;
+            unsubscribe();
+            showMainApp(user);
+            buildSideMenu();
+            listenForAllUnitPdfs();
+            loadNoteboard();
+        }
+
+        const unsubscribe = customerRef
             .collection('subscriptions')
             .where('status', 'in', ['trialing', 'active'])
             .onSnapshot((snapshot) => {
-                if (!snapshot.empty && !subscriptionConfirmed) {
-                    subscriptionConfirmed = true;
-                    unsubscribe();
-                    showMainApp(user);
-                    buildSideMenu();
-                    listenForAllUnitPdfs();
-                    loadNoteboard();
-                }
+                if (!snapshot.empty) onConfirmed();
             }, () => {
                 window.location.href = 'subscribe.html?redirect=menutally.html';
             });
+
+        // Fallback: check one-time payments (in case checkout ran in payment mode)
+        customerRef.collection('payments')
+            .where('status', '==', 'succeeded')
+            .get()
+            .then((snap) => { if (!snap.empty) onConfirmed(); });
+
         // Grace period for webhook processing before redirecting
         setTimeout(() => {
             if (!subscriptionConfirmed) {

@@ -459,36 +459,50 @@
     const fsDb = firebase.firestore();
 
     function loadSubscriptionStatus(user) {
-        fsDb.collection('customers').doc(user.uid)
+        const customerRef = fsDb.collection('customers').doc(user.uid);
+        const el = document.getElementById('subStatus');
+        const actions = document.getElementById('subActions');
+        const upgrade = document.getElementById('subUpgrade');
+
+        function showPaid() {
+            el.textContent = 'Pro (Active)';
+            el.style.color = '#155724';
+            el.style.background = '#d4edda';
+            el.style.borderColor = '#c3e6cb';
+            actions.style.display = 'block';
+            upgrade.style.display = 'none';
+        }
+
+        function showFree() {
+            el.textContent = 'Free';
+            el.style.color = '#856404';
+            el.style.background = '#fff3cd';
+            el.style.borderColor = '#ffeaa7';
+            actions.style.display = 'none';
+            upgrade.style.display = 'inline-block';
+        }
+
+        customerRef
             .collection('subscriptions')
             .where('status', 'in', ['trialing', 'active'])
             .onSnapshot((snapshot) => {
-                const el = document.getElementById('subStatus');
-                const actions = document.getElementById('subActions');
-                const upgrade = document.getElementById('subUpgrade');
                 if (!snapshot.empty) {
-                    el.textContent = 'Pro (Active)';
-                    el.style.color = '#155724';
-                    el.style.background = '#d4edda';
-                    el.style.borderColor = '#c3e6cb';
-                    actions.style.display = 'block';
-                    upgrade.style.display = 'none';
+                    showPaid();
                 } else {
-                    el.textContent = 'Free';
-                    el.style.color = '#856404';
-                    el.style.background = '#fff3cd';
-                    el.style.borderColor = '#ffeaa7';
-                    actions.style.display = 'none';
-                    upgrade.style.display = 'inline-block';
+                    // Fallback: check one-time payments (in case checkout ran in payment mode)
+                    customerRef.collection('payments')
+                        .where('status', '==', 'succeeded')
+                        .get()
+                        .then((paySnap) => !paySnap.empty ? showPaid() : showFree())
+                        .catch(() => showFree());
                 }
             }, (err) => {
                 console.error('Error checking subscription:', err);
-                const el = document.getElementById('subStatus');
-                el.textContent = 'Free';
+                el.textContent = 'Unable to verify subscription';
                 el.style.color = '#856404';
                 el.style.background = '#fff3cd';
                 el.style.borderColor = '#ffeaa7';
-                document.getElementById('subUpgrade').style.display = 'inline-block';
+                upgrade.style.display = 'inline-block';
             });
     }
 

@@ -297,24 +297,37 @@
 
     // Listen to the subscriptions sub-collection for this user
     function checkSubscriptionStatus(user) {
-        unsubscribeListener = fsDb.collection('customers').doc(user.uid)
+        const customerRef = fsDb.collection('customers').doc(user.uid);
+
+        function showPaid() {
+            document.getElementById('subscribedView').style.display = 'block';
+            document.getElementById('subscribeView').style.display = 'none';
+            // If returning from successful payment, redirect to target page
+            if (new URLSearchParams(window.location.search).get('success') === 'true') {
+                const target = pageRedirect || 'account.html';
+                const allowed = ['account.html', 'livetimesheet.html', 'menutally.html'];
+                window.location.href = allowed.includes(target) ? target : 'account.html';
+            }
+        }
+
+        function showFree() {
+            document.getElementById('subscribedView').style.display = 'none';
+            document.getElementById('subscribeView').style.display = 'block';
+        }
+
+        unsubscribeListener = customerRef
             .collection('subscriptions')
             .where('status', 'in', ['trialing', 'active'])
             .onSnapshot((snapshot) => {
-                if (snapshot.empty) {
-                    // No active subscription
-                    document.getElementById('subscribedView').style.display = 'none';
-                    document.getElementById('subscribeView').style.display = 'block';
+                if (!snapshot.empty) {
+                    showPaid();
                 } else {
-                    // Has active subscription
-                    document.getElementById('subscribedView').style.display = 'block';
-                    document.getElementById('subscribeView').style.display = 'none';
-                    // If returning from successful payment, redirect to target page
-                    if (new URLSearchParams(window.location.search).get('success') === 'true') {
-                        const target = pageRedirect || 'account.html';
-                        const allowed = ['account.html', 'livetimesheet.html', 'menutally.html'];
-                        window.location.href = allowed.includes(target) ? target : 'account.html';
-                    }
+                    // Fallback: check one-time payments (in case checkout ran in payment mode)
+                    customerRef.collection('payments')
+                        .where('status', '==', 'succeeded')
+                        .get()
+                        .then((paySnap) => !paySnap.empty ? showPaid() : showFree())
+                        .catch(() => showFree());
                 }
             });
     }
@@ -332,6 +345,7 @@
             const redirectSuffix = pageRedirect ? '&redirect=' + encodeURIComponent(pageRedirect) : '';
             const docRef = await fsDb.collection('customers').doc(currentUser.uid)
                 .collection('checkout_sessions').add({
+                    mode: 'subscription',
                     price: STRIPE_PRICE_ID,
                     success_url: window.location.origin + '/subscribe.html?success=true' + redirectSuffix,
                     cancel_url: window.location.origin + '/subscribe.html?canceled=true' + redirectSuffix,
