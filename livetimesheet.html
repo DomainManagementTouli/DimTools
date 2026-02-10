@@ -341,21 +341,27 @@
         const fsDb = firebase.firestore();
 
         function checkSubscription(user) {
-            fsDb.collection('customers').doc(user.uid)
+            let subscriptionConfirmed = false;
+            const unsubscribe = fsDb.collection('customers').doc(user.uid)
                 .collection('subscriptions')
                 .where('status', 'in', ['trialing', 'active'])
-                .get()
-                .then((snapshot) => {
-                    if (!snapshot.empty) {
+                .onSnapshot((snapshot) => {
+                    if (!snapshot.empty && !subscriptionConfirmed) {
+                        subscriptionConfirmed = true;
+                        unsubscribe();
                         showMainApp(user);
                         initializeDatabase();
-                    } else {
-                        window.location.href = 'subscribe.html';
                     }
-                })
-                .catch(() => {
-                    window.location.href = 'subscribe.html';
+                }, () => {
+                    window.location.href = 'subscribe.html?redirect=livetimesheet.html';
                 });
+            // Grace period for webhook processing before redirecting
+            setTimeout(() => {
+                if (!subscriptionConfirmed) {
+                    unsubscribe();
+                    window.location.href = 'subscribe.html?redirect=livetimesheet.html';
+                }
+            }, 3000);
         }
 
         // Auth state observer - redirect to centralized login if not authenticated

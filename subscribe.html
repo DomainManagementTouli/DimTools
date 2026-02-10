@@ -273,6 +273,7 @@
 
     let currentUser = null;
     let unsubscribeListener = null;
+    const pageRedirect = new URLSearchParams(window.location.search).get('redirect') || '';
 
     function showMessage(text, type) {
         const msg = document.getElementById('subMessage');
@@ -308,6 +309,12 @@
                     // Has active subscription
                     document.getElementById('subscribedView').style.display = 'block';
                     document.getElementById('subscribeView').style.display = 'none';
+                    // If returning from successful payment, redirect to target page
+                    if (new URLSearchParams(window.location.search).get('success') === 'true') {
+                        const target = pageRedirect || 'account.html';
+                        const allowed = ['account.html', 'livetimesheet.html', 'menutally.html'];
+                        window.location.href = allowed.includes(target) ? target : 'account.html';
+                    }
                 }
             });
     }
@@ -322,11 +329,12 @@
 
         try {
             // Write a new checkout session document to Firestore
+            const redirectSuffix = pageRedirect ? '&redirect=' + encodeURIComponent(pageRedirect) : '';
             const docRef = await fsDb.collection('customers').doc(currentUser.uid)
                 .collection('checkout_sessions').add({
                     price: STRIPE_PRICE_ID,
-                    success_url: window.location.origin + '/subscribe.html?success=true',
-                    cancel_url: window.location.origin + '/subscribe.html?canceled=true',
+                    success_url: window.location.origin + '/subscribe.html?success=true' + redirectSuffix,
+                    cancel_url: window.location.origin + '/subscribe.html?canceled=true' + redirectSuffix,
                 });
 
             // Listen for the extension to populate the session URL
@@ -374,11 +382,14 @@
     // Check for Stripe redirect success/cancel params
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
-        showMessage('Payment successful! Redirecting to your account...', 'success');
-        // Redirect to account page after short delay
+        showMessage('Payment successful! Confirming your subscription...', 'success');
+        // Fallback redirect if subscription webhook takes too long to sync
+        // (primary redirect happens in checkSubscriptionStatus once subscription is confirmed)
+        const fallbackTarget = pageRedirect || 'account.html';
+        const allowedPages = ['account.html', 'livetimesheet.html', 'menutally.html'];
         setTimeout(() => {
-            window.location.href = 'account.html';
-        }, 2000);
+            window.location.href = allowedPages.includes(fallbackTarget) ? fallbackTarget : 'account.html';
+        }, 8000);
     } else if (urlParams.get('canceled') === 'true') {
         showMessage('Checkout was canceled. You can try again anytime.', 'info');
     }
