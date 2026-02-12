@@ -228,6 +228,44 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 12px;
         }
+
+        /* Cancel subscription modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+            padding: 32px;
+            max-width: 420px;
+            width: 90%;
+            border: 2px solid #1a3c8b;
+        }
+        .modal-card h2 {
+            font-size: 18px;
+            color: #1a3c8b;
+            margin-bottom: 16px;
+        }
+        .modal-card p {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -298,12 +336,22 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="cancelModal">
+    <div class="modal-card">
+        <h2>Cancel Subscription</h2>
+        <p id="cancelModalMsg"></p>
+        <div class="modal-btns">
+            <button class="btn-danger" id="confirmCancelBtn" style="margin-top: 0;">Cancel Subscription</button>
+            <button class="btn-secondary" id="goBackBtn">Go Back</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 
 <script>
     const firebaseConfig = {
@@ -457,6 +505,8 @@
 
     // Subscription status (Firestore via Stripe Extension)
     const fsDb = firebase.firestore();
+    let activeSubscriptionRef = null;
+    let activeSubscriptionData = null;
 
     function loadSubscriptionStatus(user) {
         fsDb.collection('customers').doc(user.uid)
@@ -467,13 +517,29 @@
                 const actions = document.getElementById('subActions');
                 const upgrade = document.getElementById('subUpgrade');
                 if (!snapshot.empty) {
-                    el.textContent = 'Pro (Active)';
-                    el.style.color = '#155724';
-                    el.style.background = '#d4edda';
-                    el.style.borderColor = '#c3e6cb';
-                    actions.style.display = 'block';
-                    upgrade.style.display = 'none';
+                    const doc = snapshot.docs[0];
+                    activeSubscriptionRef = doc.ref;
+                    activeSubscriptionData = doc.data();
+
+                    if (activeSubscriptionData.cancel_at_period_end) {
+                        const endDate = getSubscriptionEndDate();
+                        el.textContent = 'Pro (Cancels ' + endDate.toLocaleDateString() + ')';
+                        el.style.color = '#856404';
+                        el.style.background = '#fff3cd';
+                        el.style.borderColor = '#ffeaa7';
+                        actions.style.display = 'none';
+                        upgrade.style.display = 'none';
+                    } else {
+                        el.textContent = 'Pro (Active)';
+                        el.style.color = '#155724';
+                        el.style.background = '#d4edda';
+                        el.style.borderColor = '#c3e6cb';
+                        actions.style.display = 'block';
+                        upgrade.style.display = 'none';
+                    }
                 } else {
+                    activeSubscriptionRef = null;
+                    activeSubscriptionData = null;
                     el.textContent = 'Free';
                     el.style.color = '#856404';
                     el.style.background = '#fff3cd';
@@ -483,6 +549,8 @@
                 }
             }, (err) => {
                 console.error('Error checking subscription:', err);
+                activeSubscriptionRef = null;
+                activeSubscriptionData = null;
                 const el = document.getElementById('subStatus');
                 el.textContent = 'Free';
                 el.style.color = '#856404';
@@ -492,26 +560,49 @@
             });
     }
 
-    // Manage subscription button - opens Stripe Customer Portal
-    document.getElementById('manageSubBtn').addEventListener('click', async function() {
-        if (!currentUser) return;
+    function getSubscriptionEndDate() {
+        if (activeSubscriptionData && activeSubscriptionData.current_period_start) {
+            const lastPayment = activeSubscriptionData.current_period_start.toDate();
+            return new Date(lastPayment.getTime() + 30 * 24 * 60 * 60 * 1000);
+        }
+        return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Manage subscription button - show cancellation modal
+    document.getElementById('manageSubBtn').addEventListener('click', function() {
+        if (!activeSubscriptionData) return;
+
+        const endDate = getSubscriptionEndDate();
+        const dateStr = endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('cancelModalMsg').textContent =
+            'Your subscription will end on ' + dateStr + '. It will cancel and not renew.';
+        document.getElementById('cancelModal').classList.add('show');
+    });
+
+    // Confirm cancel
+    document.getElementById('confirmCancelBtn').addEventListener('click', async function() {
+        if (!activeSubscriptionRef) return;
 
         const btn = this;
         btn.disabled = true;
-        btn.textContent = 'Loading...';
+        btn.textContent = 'Cancelling...';
 
         try {
-            const functionRef = firebase.functions().httpsCallable('ext-firestore-stripe-payments-createPortalLink');
-            const { data } = await functionRef({
-                returnUrl: window.location.origin + '/account.html',
-            });
-            window.location.assign(data.url);
+            await activeSubscriptionRef.update({ cancel_at_period_end: true });
+            document.getElementById('cancelModal').classList.remove('show');
+            showMessage('Your subscription has been cancelled. It will remain active until the end of your billing period.', 'success');
         } catch (err) {
-            console.error('Portal error:', err);
-            showMessage('Failed to open subscription management. Please try again.', 'error');
-            btn.disabled = false;
-            btn.textContent = 'Manage Subscription';
+            console.error('Cancel error:', err);
+            showMessage('Failed to cancel subscription. Please try again.', 'error');
+            document.getElementById('cancelModal').classList.remove('show');
         }
+        btn.disabled = false;
+        btn.textContent = 'Cancel Subscription';
+    });
+
+    // Go back button
+    document.getElementById('goBackBtn').addEventListener('click', function() {
+        document.getElementById('cancelModal').classList.remove('show');
     });
 
     // Sign out

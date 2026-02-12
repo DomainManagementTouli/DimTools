@@ -186,6 +186,69 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+
+        /* Cancel subscription modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+            padding: 32px;
+            max-width: 420px;
+            width: 90%;
+            border: 2px solid #1a3c8b;
+        }
+        .modal-card h2 {
+            font-size: 18px;
+            color: #1a3c8b;
+            margin-bottom: 16px;
+        }
+        .modal-card p {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-cancel {
+            padding: 10px 20px;
+            background: white;
+            color: #c0392b;
+            border: 2px solid #c0392b;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-cancel:hover { background: #c0392b; color: white; }
+        .btn-cancel:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-back {
+            padding: 10px 20px;
+            background: white;
+            color: #1a3c8b;
+            border: 2px solid #1a3c8b;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { background: #f4f6fb; }
     </style>
 </head>
 <body>
@@ -236,6 +299,17 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="cancelModal">
+    <div class="modal-card">
+        <h2>Cancel Subscription</h2>
+        <p id="cancelModalMsg"></p>
+        <div class="modal-btns">
+            <button class="btn-cancel" id="confirmCancelBtn">Cancel Subscription</button>
+            <button class="btn-back" id="goBackBtn">Go Back</button>
+        </div>
+    </div>
+</div>
+
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -273,6 +347,8 @@
 
     let currentUser = null;
     let unsubscribeListener = null;
+    let activeSubscriptionRef = null;
+    let activeSubscriptionData = null;
     const pageRedirect = new URLSearchParams(window.location.search).get('redirect') || '';
 
     function showMessage(text, type) {
@@ -303,12 +379,37 @@
             .onSnapshot((snapshot) => {
                 if (snapshot.empty) {
                     // No active subscription
+                    activeSubscriptionRef = null;
+                    activeSubscriptionData = null;
                     document.getElementById('subscribedView').style.display = 'none';
                     document.getElementById('subscribeView').style.display = 'block';
                 } else {
+                    const doc = snapshot.docs[0];
+                    activeSubscriptionRef = doc.ref;
+                    activeSubscriptionData = doc.data();
+
                     // Has active subscription
                     document.getElementById('subscribedView').style.display = 'block';
                     document.getElementById('subscribeView').style.display = 'none';
+
+                    // Update UI if pending cancellation
+                    const subHeading = document.querySelector('#subscribedView h3');
+                    const subDesc = document.querySelector('#subscribedView p');
+                    const manageBtn = document.getElementById('manageSubBtn');
+                    if (activeSubscriptionData.cancel_at_period_end) {
+                        const endDate = getSubscriptionEndDate();
+                        const dateStr = endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        subHeading.textContent = 'Subscription Cancelling';
+                        subHeading.style.color = '#856404';
+                        subDesc.textContent = 'Your subscription will end on ' + dateStr + '. It will cancel and not renew.';
+                        manageBtn.style.display = 'none';
+                    } else {
+                        subHeading.textContent = "You're subscribed!";
+                        subHeading.style.color = '#28a745';
+                        subDesc.textContent = 'You have full access to all Pro tools.';
+                        manageBtn.style.display = 'inline-block';
+                    }
+
                     // If returning from successful payment, redirect to target page
                     if (new URLSearchParams(window.location.search).get('success') === 'true') {
                         const target = pageRedirect || 'account.html';
@@ -317,6 +418,14 @@
                     }
                 }
             });
+    }
+
+    function getSubscriptionEndDate() {
+        if (activeSubscriptionData && activeSubscriptionData.current_period_start) {
+            const lastPayment = activeSubscriptionData.current_period_start.toDate();
+            return new Date(lastPayment.getTime() + 30 * 24 * 60 * 60 * 1000);
+        }
+        return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     }
 
     // Subscribe button: write a checkout_sessions doc → extension creates Stripe session → we redirect
@@ -357,26 +466,41 @@
         }
     });
 
-    // Manage subscription button: redirect to Stripe Customer Portal
-    // The extension creates a callable function ext-firestore-stripe-payments-createPortalLink
-    document.getElementById('manageSubBtn').addEventListener('click', async function() {
-        if (!currentUser) return;
+    // Manage subscription button - show cancellation modal
+    document.getElementById('manageSubBtn').addEventListener('click', function() {
+        if (!activeSubscriptionData) return;
+
+        const endDate = getSubscriptionEndDate();
+        const dateStr = endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('cancelModalMsg').textContent =
+            'Your subscription will end on ' + dateStr + '. It will cancel and not renew.';
+        document.getElementById('cancelModal').classList.add('show');
+    });
+
+    // Confirm cancel
+    document.getElementById('confirmCancelBtn').addEventListener('click', async function() {
+        if (!activeSubscriptionRef) return;
 
         const btn = this;
         btn.disabled = true;
-        btn.textContent = 'Loading...';
+        btn.textContent = 'Cancelling...';
 
         try {
-            const functionRef = firebase.functions().httpsCallable('ext-firestore-stripe-payments-createPortalLink');
-            const { data } = await functionRef({
-                returnUrl: window.location.origin + '/subscribe.html',
-            });
-            window.location.assign(data.url);
+            await activeSubscriptionRef.update({ cancel_at_period_end: true });
+            document.getElementById('cancelModal').classList.remove('show');
+            showMessage('Your subscription has been cancelled. It will remain active until the end of your billing period.', 'success');
         } catch (err) {
-            showMessage('Failed to open subscription management. Please try again.', 'error');
-            btn.disabled = false;
-            btn.textContent = 'Manage Subscription';
+            console.error('Cancel error:', err);
+            showMessage('Failed to cancel subscription. Please try again.', 'error');
+            document.getElementById('cancelModal').classList.remove('show');
         }
+        btn.disabled = false;
+        btn.textContent = 'Cancel Subscription';
+    });
+
+    // Go back button
+    document.getElementById('goBackBtn').addEventListener('click', function() {
+        document.getElementById('cancelModal').classList.remove('show');
     });
 
     // Check for Stripe redirect success/cancel params
@@ -394,7 +518,5 @@
         showMessage('Checkout was canceled. You can try again anytime.', 'info');
     }
 </script>
-<!-- Firebase Functions SDK needed for the portal link callable -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 </body>
 </html>
